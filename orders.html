@@ -97,7 +97,7 @@ async function loadPromos(){
  root.innerHTML=data.map(p=>{
   const value=p.discount_type==="percent"?p.discount_value+"%":Number(p.discount_value).toLocaleString("en-US")+" د.ع";
   const expiry=p.expires_at?new Date(p.expires_at).toLocaleString("ar-IQ"):"بدون";
-  return "<div class='promorow'><div><b>"+esc(p.code)+"</b> · "+value+"<div class='muted'>الحد الأدنى: "+Number(p.min_order_iqd).toLocaleString("en-US")+" د.ع | الاستخدام: "+p.used_count+"/"+(p.usage_limit??"∞")+" | الانتهاء: "+expiry+"</div><span class='status'>"+(p.is_active?"فعال":"متوقف")+"</span></div><div class='actions'><button class='"+(p.is_active?"orange":"green")+"' onclick=\\"togglePromo('"+p.id+"',"+(!p.is_active)+")\\">"+(p.is_active?"إيقاف":"تفعيل")+"</button><button onclick=\\"deletePromo('"+p.id+"')\\">حذف</button></div></div>";
+  return "<div class='promorow'><div><b>"+esc(p.code)+"</b> · "+value+"<div class='muted'>الحد الأدنى: "+Number(p.min_order_iqd).toLocaleString("en-US")+" د.ع | الاستخدام: "+p.used_count+"/"+(p.usage_limit??"∞")+" | الانتهاء: "+expiry+"</div><span class='status'>"+(p.is_active?"فعال":"متوقف")+"</span></div><div class='actions'><button class='"+(p.is_active?"orange":"green")+"' onclick=\"togglePromo('"+p.id+"',"+(!p.is_active)+")\">"+(p.is_active?"إيقاف":"تفعيل")+"</button><button onclick=\"deletePromo('"+p.id+"')\">حذف</button></div></div>";
  }).join("");
 }
 async function savePromo(){
