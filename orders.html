@@ -86,14 +86,14 @@ async function enterDashboard(user){
 async function logout(){if(refreshTimer)clearInterval(refreshTimer);await db.auth.signOut();document.getElementById("dashboard").classList.add("hidden");document.getElementById("login").classList.remove("hidden")}
 async function loadOrders(){
  const root=document.getElementById("orders");root.innerHTML="<div class='order'>جارٍ تحميل الطلبات...</div>";
- const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,payment_method_name,payment_status,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
+ const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,payment_method_name,payment_status,payment_proof_url,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
  if(error){root.innerHTML="<div class='order'>تعذر تحميل الطلبات: "+esc(error.message)+"</div>";return}
  if(!data?.length){root.innerHTML="<div class='order'>لا توجد طلبات حتى الآن.</div>";return}
  root.innerHTML=data.map(o=>{
   const items=(o.order_items||[]).map(x=>esc(x.product_name)+" × "+x.quantity+" = "+Number(x.line_total).toLocaleString("en-US")+" د.ع").join("<br>");
   const type=o.order_type==="dine_in"?"صالة":"سفري";
   const statusMap={new:"جديد",preparing:"قيد التحضير",ready:"جاهز",completed:"مكتمل",cancelled:"ملغي"};
-  return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='muted'>المجموع قبل الخصم: "+Number(o.subtotal_iqd??o.total_iqd).toLocaleString("en-US")+" د.ع"+(o.discount_code?"<br>كود الخصم: <b>"+esc(o.discount_code)+"</b> | الخصم: "+Number(o.discount_amount||0).toLocaleString("en-US")+" د.ع":"")+"</p><p class='total'>المبلغ النهائي: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><p><b>وسيلة الدفع:</b> "+esc(o.payment_method_name||"غير محددة")+" | <b>حالة الدفع:</b> "+esc(o.payment_status||"غير محددة")+"</p>"+(o.payment_status!=="paid"?"<button class='green' onclick='confirmPayment(&quot;"+o.id+"&quot;)'>تأكيد استلام الدفع</button>":"")+"<span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
+  return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='muted'>المجموع قبل الخصم: "+Number(o.subtotal_iqd??o.total_iqd).toLocaleString("en-US")+" د.ع"+(o.discount_code?"<br>كود الخصم: <b>"+esc(o.discount_code)+"</b> | الخصم: "+Number(o.discount_amount||0).toLocaleString("en-US")+" د.ع":"")+"</p><p class='total'>المبلغ النهائي: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><p><b>وسيلة الدفع:</b> "+esc(o.payment_method_name||"غير محددة")+" | <b>حالة الدفع:</b> "+esc(o.payment_status||"غير محددة")+"</p>"+(o.payment_status!=="paid"?"<button class='green' onclick='confirmPayment(&quot;"+o.id+"&quot;)'>تأكيد استلام الدفع</button>":"")+(o.payment_proof_url?"<button onclick='openPaymentProof(&quot;"+esc(o.payment_proof_url)+"&quot;)'>عرض القسيمة</button>":"")+"<span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
  }).join("");
 }
 
@@ -118,6 +118,11 @@ async function addPaymentMethod(){
 async function togglePaymentMethod(id,is_enabled){
  const {error}=await db.from("restaurant_payment_methods").update({is_enabled}).eq("id",id);
  if(error){alert("تعذر التحديث: "+error.message);return;}await loadPaymentMethods();
+}
+async function openPaymentProof(path){
+ const {data,error}=await db.storage.from("foodfort-payment-proofs").createSignedUrl(path,600);
+ if(error){alert("تعذر فتح القسيمة: "+error.message);return;}
+ window.open(data.signedUrl,"_blank","noopener");
 }
 async function confirmPayment(id){
  if(!confirm("هل تحققت فعلياً من وصول المبلغ؟"))return;
