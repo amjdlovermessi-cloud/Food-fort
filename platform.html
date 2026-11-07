@@ -120,7 +120,7 @@ async function loadAll(){await Promise.all([loadPlans(),loadRestaurants()])}
 async function loadPlans(){const {data,error}=await db.from("subscription_plans").select("*").order("duration_days");if(error){alert(error.message);return}plans=data||[];const m=plans.find(x=>x.plan_code==="monthly"),a=plans.find(x=>x.plan_code==="annual");document.getElementById("monthlyPrice").value=m?.price_iqd??0;document.getElementById("annualPrice").value=a?.price_iqd??0}
 async function savePlanPrices(){for(const p of plans){const value=Number(document.getElementById(p.plan_code==="monthly"?"monthlyPrice":"annualPrice").value);if(!Number.isInteger(value)||value<0){alert("أدخل سعراً صحيحاً");return}const {error}=await db.from("subscription_plans").update({price_iqd:value}).eq("id",p.id);if(error){alert(error.message);return}}document.getElementById("planMsg").textContent="تم حفظ الأسعار";await loadPlans()}
 async function loadRestaurants(){
- const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,created_at,tagline,logo_url,primary_color,accent_color,phone,address,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
+ const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,owner_email,created_at,tagline,logo_url,primary_color,accent_color,phone,address,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
  if(error){document.getElementById("restaurantsBody").innerHTML="<tr><td colspan='7'>"+esc(error.message)+"</td></tr>";return}
  restaurants=data||[];
  const identity=document.getElementById("identityRestaurant"),previous=identity.value;
@@ -130,19 +130,16 @@ async function loadRestaurants(){
  if(memberPrevious&&restaurants.some(r=>r.id===memberPrevious))memberSelect.value=memberPrevious;
  if(previous&&restaurants.some(r=>r.id===previous))identity.value=previous;
  if(identity.value)await loadIdentity();
- const ids=restaurants.map(x=>x.owner_user_id).filter(Boolean);(x=>x.owner_user_id).filter(Boolean);
- let emails={};
- if(ids.length){const {data:members}=await db.from("restaurant_members").select("restaurant_id,user_id,role").in("restaurant_id",restaurants.map(x=>x.id));if(members)emails=Object.fromEntries(members.map(m=>[m.restaurant_id,m.role]));}
  document.getElementById("statRestaurants").textContent=restaurants.length;
  let active=0,expired=0,revenue=0;
  const rows=restaurants.map(r=>{
   const subs=(r.restaurant_subscriptions||[]).sort((a,b)=>new Date(b.created_at||b.starts_at||0)-new Date(a.created_at||a.starts_at||0));
   const s=subs.find(x=>x.status==="active"&&x.ends_at&&new Date(x.ends_at)>new Date())||subs[0];
   if(s?.status==="active"&&new Date(s.ends_at)>new Date())active++;else if(s)expired++;
-  revenue+=subs.filter(x=>x.status==="active").reduce((n,x)=>n+Number(x.price_iqd||0),0);
+  revenue+=subs.filter(x=>x.status==="active"&&x.starts_at&&new Date(x.starts_at)<=new Date()&&x.ends_at&&new Date(x.ends_at)>new Date()).reduce((n,x)=>n+Number(x.price_iqd||0),0);
   const status=r.status==="active"?"نشط":"موقوف";
-  const subLabel=s?(s.subscription_plans?.plan_name||"اشتراك")+" · "+(s.status==="active"&&new Date(s.ends_at)>new Date()?"فعال":s.status):"بدون اشتراك";
-  return "<tr><td><b>"+esc(r.restaurant_name)+"</b></td><td>"+esc(r.slug)+"</td><td>"+(r.owner_user_id?"مرتبط":"غير مرتبط")+"</td><td>"+esc(subLabel)+"</td><td>"+date(s?.ends_at)+"</td><td><span class='pill "+(r.status==="active"?"":"off")+"'>"+status+"</span></td><td><div class='actions'><button class='green' onclick=\"openSubscription('"+r.id+"')\">اشتراك / تجديد</button><button class='secondary' onclick=\"toggleRestaurant('"+r.id+"','"+r.status+"')\">"+(r.status==="active"?"إيقاف":"تفعيل")+"</button><button class='secondary' onclick=\"openMenu('"+r.slug+"')\">معاينة المنيو</button></div></td></tr>";
+  const live=!!(s&&s.status==="active"&&s.starts_at&&new Date(s.starts_at)<=new Date()&&s.ends_at&&new Date(s.ends_at)>new Date());const subLabel=s?(s.subscription_plans?.plan_name||"اشتراك")+" · "+(live?"فعال":(s.status==="active"?"منتهي":s.status)):"بدون اشتراك";
+  return "<tr><td><b>"+esc(r.restaurant_name)+"</b></td><td>"+esc(r.slug)+"</td><td>"+(r.owner_email?esc(r.owner_email):(r.owner_user_id?"مرتبط":"غير مرتبط"))+"</td><td>"+esc(subLabel)+"</td><td>"+date(s?.ends_at)+"</td><td><span class='pill "+(r.status==="active"?"":"off")+"'>"+status+"</span></td><td><div class='actions'><button class='green' onclick=\"openSubscription('"+r.id+"')\">اشتراك / تجديد</button><button class='secondary' onclick=\"toggleRestaurant('"+r.id+"','"+r.status+"')\">"+(r.status==="active"?"إيقاف":"تفعيل")+"</button><button class='secondary' onclick=\"openMenu('"+r.slug+"')\">معاينة المنيو</button></div></td></tr>";
  }).join("");
  document.getElementById("restaurantsBody").innerHTML=rows||"<tr><td colspan='7' class='empty'>لا توجد مطاعم بعد</td></tr>";
  document.getElementById("statActive").textContent=active;document.getElementById("statExpired").textContent=expired;document.getElementById("statRevenue").textContent=money(revenue);
