@@ -79,6 +79,7 @@ async function enterDashboard(user){
  document.getElementById("dashboard").classList.remove("hidden");
  await loadOrders();
  await loadPromos();
+ await loadRestaurantProfile();
  await loadPaymentMethods();
  if(refreshTimer)clearInterval(refreshTimer);
  refreshTimer=setInterval(loadOrders,12000);
