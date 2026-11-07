@@ -50,6 +50,7 @@ function showPaymentInstructions(){
  if(m.account_details)h+='<br>بيانات التحويل: '+htmlEsc(m.account_details);
  if(m.qr_image_url)h+='<br><img alt="QR" style="max-width:180px" src="'+htmlEsc(m.qr_image_url)+'">';
  if(m.method_type!=="cashier")h+='<br><b>لن يبدأ التحضير قبل تأكيد وصول المبلغ من الإدارة.</b>';
+ if(m.require_proof)h+='<br><label>إرفاق قسيمة التحويل</label><input id="paymentProof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">';
  box.innerHTML=h;
 }
 async function ensureAnonymousSession(){let {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session){const signed=await db.auth.signInAnonymously();if(signed.error)throw signed.error;}}
