@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>لوحة المورّد | Food Fort Platform</title>
+<style>
+:root{--bg:#f3f5f9;--ink:#182233;--muted:#6e7888;--navy:#101827;--red:#c90019;--line:#e6eaf0;--green:#16834b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif}
+header{background:linear-gradient(125deg,#101827,#263750);color:#fff;padding:25px 18px 30px}
+.head{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:22px;font-weight:900}.brand small{display:block;color:#b9c5d5;font-size:12px;font-weight:400;margin-top:7px}
+.wrap{max-width:1180px;margin:-12px auto 40px;padding:0 16px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:18px;margin:15px 0;box-shadow:0 7px 24px #16243a08}
+h2{font-size:18px;margin:0 0 14px}h3{font-size:15px;margin:0 0 10px}
+.muted{color:var(--muted);font-size:13px;line-height:1.7}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:#f7f8fb;border:1px solid var(--line);border-radius:13px;padding:14px}.stat b{font-size:24px;display:block;margin-top:7px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{font-size:12px;font-weight:bold;display:block;margin:0 0 6px}
+input,select{width:100%;padding:11px 12px;border:1px solid #dce2ea;border-radius:10px;font:inherit;background:#fff;min-width:0}
+input[type=color]{height:44px;padding:4px}
+.field{margin-bottom:11px}
+button,.linkbtn{border:0;border-radius:10px;padding:11px 15px;font:inherit;font-weight:bold;cursor:pointer;background:var(--navy);color:white}
+button.secondary{background:#edf1f6;color:#273348}button.green{background:var(--green)}button.red{background:#fff0f1;color:#ba1025;border:1px solid #ffd3d8}
+button:disabled{opacity:.55;cursor:wait}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:right;padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:bold;background:#fafbfc}
+.pill{display:inline-block;padding:5px 9px;border-radius:30px;background:#eaf7ef;color:#137543;font-size:11px;font-weight:bold}.pill.off{background:#fff0f1;color:#b20f23}.pill.wait{background:#fff6df;color:#8a5c00}
+.notice{padding:12px;border-radius:11px;background:#eef4ff;color:#27456e;font-size:13px;margin:12px 0;line-height:1.7}
+#app,#login{display:none}.empty{text-align:center;padding:25px;color:var(--muted)}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="brand">FOOD FORT PLATFORM <small>لوحة المورّد الرئيسي · إدارة المطاعم والاشتراكات</small></div><div id="userInfo" class="muted" style="color:#d7dfeb"></div></div></header>
+<main class="wrap">
+<section id="login" class="panel" style="max-width:430px;margin:35px auto">
+<h2>دخول المورّد الرئيسي</h2><p class="muted">هذه اللوحة مخصصة لحساب مالك المنصة فقط.</p>
+<div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" value="amjdlovermessi@gmail.com"></div>
+<div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div>
+<button id="loginBtn" onclick="login()">تسجيل الدخول</button><p id="loginMsg" class="muted"></p>
+</section>
+<section id="app">
+<div class="stats">
+<div class="stat"><span class="muted">إجمالي المطاعم</span><b id="statRestaurants">0</b></div>
+<div class="stat"><span class="muted">اشتراكات نشطة</span><b id="statActive">0</b></div>
+<div class="stat"><span class="muted">اشتراكات منتهية</span><b id="statExpired">0</b></div>
+<div class="stat"><span class="muted">إيرادات الاشتراكات المسجلة</span><b id="statRevenue">0</b><span class="muted">د.ع</span></div>
+</div>
+<div class="panel">
+<h2>إضافة مطعم جديد</h2><p class="muted">أنشئ مساحة مستقلة للمطعم، وسيتم إرسال دعوة إلى بريد مديره. أنت تحدد هويته البصرية، والمطعم يدير أطباقه وطلباته.</p>
+<div class="grid">
+<div class="field"><label>اسم المطعم</label><input id="newName" placeholder="مثلاً: مطعم النخيل"></div>
+<div class="field"><label>الرابط المختصر (إنجليزي)</label><input id="newSlug" placeholder="al-nakheel"></div>
+<div class="field"><label>بريد مدير المطعم</label><input id="managerEmail" type="email" placeholder="manager@example.com"></div>
+<div class="field"><label>الشعار النصي</label><input id="newTagline" placeholder="أهلاً بكم"></div>
+<div class="field"><label>لون الهوية الرئيسي</label><input id="newPrimary" type="color" value="#c90019"></div>
+<div class="field"><label>اللون الثانوي</label><input id="newAccent" type="color" value="#178447"></div>
+<div class="field" style="grid-column:1/-1"><label>رابط صورة الشعار (اختياري)</label><input id="newLogo" placeholder="https://..."></div>
+</div>
+<div class="actions"><button id="createBtn" class="green" onclick="createRestaurant()">إنشاء المطعم وإرسال الدعوة</button></div>
+<p id="createMsg" class="muted"></p>
+</div>
+<div class="panel">
+<h2>إدارة أسعار الاشتراكات</h2><p class="muted">الأسعار بالدينار العراقي. السعر الذي تختاره هنا يُحفظ كقيمة الاشتراك وقت التفعيل.</p>
+<div class="grid">
+<div class="field"><label>سعر الاشتراك الشهري (د.ع)</label><input id="monthlyPrice" type="number" min="0"></div>
+<div class="field"><label>سعر الاشتراك السنوي (د.ع)</label><input id="annualPrice" type="number" min="0"></div>
+</div><button onclick="savePlanPrices()">حفظ الأسعار</button><span id="planMsg" class="muted" style="margin-right:10px"></span>
+</div>
+<div class="panel">
+<h2>المطاعم والاشتراكات</h2><div class="tablewrap"><table><thead><tr><th>المطعم</th><th>الرابط</th><th>المدير</th><th>الاشتراك</th><th>ينتهي في</th><th>حالة المطعم</th><th>الإجراءات</th></tr></thead><tbody id="restaurantsBody"><tr><td colspan="7">جارٍ التحميل...</td></tr></tbody></table></div>
+</div>
+<div class="panel">
+<div class="actions" style="justify-content:space-between"><div><h2 style="margin-bottom:4px">معاينة منيوات المطاعم</h2><p class="muted" style="margin:0">تقدر تفتح أي منيو لمراجعته. إدارة الأطباق اليومية تبقى للمطعم.</p></div><button class="secondary" onclick="loadAll()">تحديث البيانات</button></div>
+<div id="menuLinks" class="actions" style="margin-top:14px"></div>
+</div>
+<div class="actions" style="justify-content:flex-end;margin:20px 0"><button class="secondary" onclick="logout()">تسجيل الخروج</button></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
+<script>
+const URL="https://gghlmpxmiivrkiltydxf.supabase.co";
+const KEY="sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIH1D8h";
+const db=window.supabase.createClient(URL,KEY,{auth:{storageKey:"foodfort_platform_auth"}});
+let plans=[],restaurants=[];
+const money=n=>Number(n||0).toLocaleString("en-US");
+const date=s=>s?new Date(s).toLocaleDateString("ar-IQ"):"-";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function showLogin(msg=""){document.getElementById("login").style.display="block";document.getElementById("app").style.display="none";document.getElementById("loginMsg").textContent=msg}
+async function login(){const b=document.getElementById("loginBtn");b.disabled=true;const {data,error}=await db.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("password").value});b.disabled=false;if(error){showLogin("تعذر الدخول: "+error.message);return}await enter(data.user)}
+async function enter(user){
+ const {data:admin,error}=await db.from("platform_admins").select("user_id").eq("user_id",user.id).maybeSingle();
+ if(error||!admin){await db.auth.signOut();showLogin("هذا الحساب ليس حساب المورّد الرئيسي.");return}
+ document.getElementById("login").style.display="none";document.getElementById("app").style.display="block";document.getElementById("userInfo").textContent=user.email||"مدير المنصة";await loadAll();
+}
+async function loadAll(){await Promise.all([loadPlans(),loadRestaurants()])}
+async function loadPlans(){const {data,error}=await db.from("subscription_plans").select("*").order("duration_days");if(error){alert(error.message);return}plans=data||[];const m=plans.find(x=>x.plan_code==="monthly"),a=plans.find(x=>x.plan_code==="annual");document.getElementById("monthlyPrice").value=m?.price_iqd??0;document.getElementById("annualPrice").value=a?.price_iqd??0}
+async function savePlanPrices(){for(const p of plans){const value=Number(document.getElementById(p.plan_code==="monthly"?"monthlyPrice":"annualPrice").value);if(!Number.isInteger(value)||value<0){alert("أدخل سعراً صحيحاً");return}const {error}=await db.from("subscription_plans").update({price_iqd:value}).eq("id",p.id);if(error){alert(error.message);return}}document.getElementById("planMsg").textContent="تم حفظ الأسعار";await loadPlans()}
+async function loadRestaurants(){
+ const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,created_at,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
+ if(error){document.getElementById("restaurantsBody").innerHTML="<tr><td colspan='7'>"+esc(error.message)+"</td></tr>";return}
+ restaurants=data||[];
+ const ids=restaurants.map(x=>x.owner_user_id).filter(Boolean);
+ let emails={};
+ if(ids.length){const {data:members}=await db.from("restaurant_members").select("restaurant_id,user_id,role").in("restaurant_id",restaurants.map(x=>x.id));if(members)emails=Object.fromEntries(members.map(m=>[m.restaurant_id,m.role]));}
+ document.getElementById("statRestaurants").textContent=restaurants.length;
+ let active=0,expired=0,revenue=0;
+ const rows=restaurants.map(r=>{
+  const subs=(r.restaurant_subscriptions||[]).sort((a,b)=>new Date(b.created_at||b.starts_at||0)-new Date(a.created_at||a.starts_at||0));
+  const s=subs.find(x=>x.status==="active"&&x.ends_at&&new Date(x.ends_at)>new Date())||subs[0];
+  if(s?.status==="active"&&new Date(s.ends_at)>new Date())active++;else if(s)expired++;
+  revenue+=subs.filter(x=>x.status==="active").reduce((n,x)=>n+Number(x.price_iqd||0),0);
+  const status=r.status==="active"?"نشط":"موقوف";
+  const subLabel=s?(s.subscription_plans?.plan_name||"اشتراك")+" · "+(s.status==="active"&&new Date(s.ends_at)>new Date()?"فعال":s.status):"بدون اشتراك";
+  return "<tr><td><b>"+esc(r.restaurant_name)+"</b></td><td>"+esc(r.slug)+"</td><td>"+(r.owner_user_id?"مرتبط":"غير مرتبط")+"</td><td>"+esc(subLabel)+"</td><td>"+date(s?.ends_at)+"</td><td><span class='pill "+(r.status==="active"?"":"off")+"'>"+status+"</span></td><td><div class='actions'><button class='green' onclick=\"openSubscription('"+r.id+"')\">اشتراك / تجديد</button><button class='secondary' onclick=\"toggleRestaurant('"+r.id+"','"+r.status+"')\">"+(r.status==="active"?"إيقاف":"تفعيل")+"</button><button class='secondary' onclick=\"openMenu('"+r.slug+"')\">معاينة المنيو</button></div></td></tr>";
+ }).join("");
+ document.getElementById("restaurantsBody").innerHTML=rows||"<tr><td colspan='7' class='empty'>لا توجد مطاعم بعد</td></tr>";
+ document.getElementById("statActive").textContent=active;document.getElementById("statExpired").textContent=expired;document.getElementById("statRevenue").textContent=money(revenue);
+ document.getElementById("menuLinks").innerHTML=restaurants.map(r=>"<button class='secondary' onclick=\"openMenu('"+r.slug+"')\">"+esc(r.restaurant_name)+"</button>").join("")||"<span class='muted'>ستظهر هنا روابط المطاعم بعد إضافتها.</span>";
+}
+async function createRestaurant(){
+ const b=document.getElementById("createBtn"),msg=document.getElementById("createMsg");b.disabled=true;msg.textContent="جارٍ إنشاء المطعم وإرسال الدعوة...";
+ const body={restaurant_name:document.getElementById("newName").value.trim(),slug:document.getElementById("newSlug").value.trim().toLowerCase(),manager_email:document.getElementById("managerEmail").value.trim(),tagline:document.getElementById("newTagline").value.trim(),logo_url:document.getElementById("newLogo").value.trim(),primary_color:document.getElementById("newPrimary").value,accent_color:document.getElementById("newAccent").value};
+ const {data,error}=await db.functions.invoke("create-restaurant",{body});b.disabled=false;
+ if(error){msg.textContent="تعذر الإنشاء: "+error.message;return}
+ if(data?.error){msg.textContent="تعذر الإنشاء: "+data.error;return}
+ msg.textContent=(data.manager_invited?"تم إنشاء المطعم وإرسال دعوة إلى ":"تم إنشاء المطعم وربط الحساب الموجود: ")+data.manager_email+" · الرابط: "+data.menu_url;
+ ["newName","newSlug","managerEmail","newTagline","newLogo"].forEach(id=>document.getElementById(id).value="");await loadRestaurants();
+}
+async function openSubscription(id){
+ const r=restaurants.find(x=>x.id===id);if(!r)return;
+ const planText=plans.map((p,i)=>(i+1)+") "+p.plan_name+" - "+money(p.price_iqd)+" د.ع").join("\n");
+ const choice=prompt("اختر نوع الاشتراك:\n"+planText,"1");if(!choice)return;
+ const p=plans[Number(choice)-1];if(!p){alert("اختيار غير صحيح");return}
+ const now=new Date(),end=new Date(now.getTime()+p.duration_days*86400000);
+ const {error}=await db.from("restaurant_subscriptions").insert({restaurant_id:id,plan_id:p.id,status:"active",starts_at:now.toISOString(),ends_at:end.toISOString(),price_iqd:p.price_iqd,created_by:(await db.auth.getUser()).data.user.id});
+ if(error){alert("تعذر تفعيل الاشتراك: "+error.message);return}
+ if(r.status!=="active"){const u=await db.from("restaurants").update({status:"active"}).eq("id",id);if(u.error){alert(u.error.message);return}}
+ await loadRestaurants();alert("تم تفعيل الاشتراك حتى "+date(end.toISOString()));
+}
+async function toggleRestaurant(id,status){const next=status==="active"?"suspended":"active";if(!confirm(next==="suspended"?"إيقاف هذا المطعم؟":"إعادة تفعيل هذا المطعم؟"))return;const {error}=await db.from("restaurants").update({status:next}).eq("id",id);if(error){alert(error.message);return}await loadRestaurants()}
+function openMenu(slug){window.open("index.html?restaurant="+encodeURIComponent(slug),"_blank")}
+async function logout(){await db.auth.signOut();showLogin("تم تسجيل الخروج")}
+(async()=>{const {data}=await db.auth.getSession();if(data.session)await enter(data.session.user);else showLogin()})();
+</script></body></html>
