@@ -76,6 +76,14 @@ button:disabled{opacity:.55;cursor:wait}
 </div><button onclick="saveIdentity()">حفظ الهوية البصرية</button><span id="identityMsg" class="muted" style="margin-right:10px"></span>
 </div>
 <div class="panel">
+<h2>إضافة حساب لإدارة المطعم</h2><p class="muted">أضف مديراً أو كاشيراً إلى مطعم موجود. ستصل دعوة إلى البريد إذا لم يكن لديه حساب مسبقاً.</p>
+<div class="grid">
+<div class="field"><label>المطعم</label><select id="memberRestaurant"></select></div>
+<div class="field"><label>البريد الإلكتروني</label><input id="memberEmail" type="email" placeholder="manager@example.com"></div>
+<div class="field"><label>الصلاحية</label><select id="memberRole"><option value="restaurant_admin">إدارة المطعم</option><option value="cashier">كاشير</option></select></div>
+</div><button class="green" id="memberBtn" onclick="inviteMember()">إضافة الحساب وإرسال الدعوة</button><span id="memberMsg" class="muted" style="margin-right:10px"></span>
+</div>
+<div class="panel">
 <h2>إدارة أسعار الاشتراكات</h2><p class="muted">الأسعار بالدينار العراقي. السعر الذي تختاره هنا يُحفظ كقيمة الاشتراك وقت التفعيل.</p>
 <div class="grid">
 <div class="field"><label>سعر الاشتراك الشهري (د.ع)</label><input id="monthlyPrice" type="number" min="0"></div>
@@ -117,6 +125,9 @@ async function loadRestaurants(){
  restaurants=data||[];
  const identity=document.getElementById("identityRestaurant"),previous=identity.value;
  identity.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");
+ const memberSelect=document.getElementById("memberRestaurant");const memberPrevious=memberSelect.value;
+ memberSelect.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");
+ if(memberPrevious&&restaurants.some(r=>r.id===memberPrevious))memberSelect.value=memberPrevious;
  if(previous&&restaurants.some(r=>r.id===previous))identity.value=previous;
  if(identity.value)await loadIdentity();
  const ids=restaurants.map(x=>x.owner_user_id).filter(Boolean);(x=>x.owner_user_id).filter(Boolean);
@@ -136,6 +147,14 @@ async function loadRestaurants(){
  document.getElementById("restaurantsBody").innerHTML=rows||"<tr><td colspan='7' class='empty'>لا توجد مطاعم بعد</td></tr>";
  document.getElementById("statActive").textContent=active;document.getElementById("statExpired").textContent=expired;document.getElementById("statRevenue").textContent=money(revenue);
  document.getElementById("menuLinks").innerHTML=restaurants.map(r=>"<button class='secondary' onclick=\"openMenu('"+r.slug+"')\">"+esc(r.restaurant_name)+"</button>").join("")||"<span class='muted'>ستظهر هنا روابط المطاعم بعد إضافتها.</span>";
+}
+async function inviteMember(){
+ const b=document.getElementById("memberBtn"),msg=document.getElementById("memberMsg");b.disabled=true;msg.textContent="جارٍ إضافة الحساب...";
+ const {data,error}=await db.functions.invoke("invite-restaurant-member",{body:{restaurant_id:document.getElementById("memberRestaurant").value,email:document.getElementById("memberEmail").value.trim(),role:document.getElementById("memberRole").value}});
+ b.disabled=false;if(error){msg.textContent="تعذر الإضافة: "+error.message;return}
+ if(data?.error){msg.textContent="تعذر الإضافة: "+data.error;return}
+ msg.textContent=(data.invited?"تم إرسال الدعوة إلى ":"تم ربط الحساب الموجود: ")+data.email;
+ document.getElementById("memberEmail").value="";await loadRestaurants();
 }
 async function loadIdentity(){
  const id=document.getElementById("identityRestaurant").value;if(!id)return;
