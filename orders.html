@@ -1,1 +1,85 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#c90019"><title>Food Fort | الطلبات</title><style>body{margin:0;background:#f4f4f4;font-family:Tahoma,Arial;color:#222}header{background:#c90019;color:white;padding:22px;text-align:center}main{max-width:900px;margin:auto;padding:16px}.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.bar a,.bar button{border:0;border-radius:9px;padding:10px 14px;background:#222;color:white;text-decoration:none}.order{background:white;border-radius:14px;padding:15px;margin:12px 0;box-shadow:0 2px 8px #0001}.order h3{margin:0 0 8px;color:#c90019}.muted{color:#777;font-size:13px}.items{padding:8px 0;border-top:1px solid #eee;border-bottom:1px solid #eee}.total{font-weight:bold;font-size:18px}.status{padding:7px 10px;border-radius:8px;background:#fff0d4;display:inline-block;margin:8px 0}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{border:0;border-radius:8px;padding:9px 12px;background:#16834b;color:white}.actions .del{background:#a22}</style></head><body><header><h1>Food Fort</h1><div>لوحة طلبات الكاشير</div></header><main><div class="bar"><h2>الطلبات الواردة</h2><div><a href="index.html">العودة للمنيو</a> <button onclick="render()">تحديث</button></div></div><p class="muted">نسخة تجريبية: تعرض الطلبات المحفوظة على نفس المتصفح والجهاز فقط. ربط الأجهزة يحتاج قاعدة بيانات مشتركة.</p><div id="orders"></div></main><script>function render(){let data=JSON.parse(localStorage.getItem("foodfort-orders")||"[]");let root=document.getElementById("orders");if(!data.length){root.innerHTML="<div class='order'>لا توجد طلبات بعد.</div>";return}root.innerHTML=data.map((o,i)=>"<article class='order'><h3>طلب "+o.id+"</h3><div class='muted'>"+o.time+"</div><p><b>الزبون:</b> "+o.name+" | <b>الهاتف:</b> "+o.phone+"</p><p><b>النوع:</b> "+o.service+(o.service==="صالة"?" | <b>الطاولة:</b> "+o.table:"")+"</p><div class='items'>"+o.items.map(x=>x.name+" × "+x.qty+" = "+Number(x.price*x.qty).toLocaleString("en-US")+" د.ع").join("<br>")+"</div><p class='total'>المجموع: "+Number(o.total).toLocaleString("en-US")+" د.ع</p><span class='status'>"+o.status+"</span><div class='actions'><button onclick='setStatus("+i+","قيد التحضير")'>قيد التحضير</button><button onclick='setStatus("+i+","جاهز")'>جاهز</button><button class='del' onclick='removeOrder("+i+")'>حذف</button></div></article>").join("")}function setStatus(i,s){let d=JSON.parse(localStorage.getItem("foodfort-orders")||"[]");d[i].status=s;localStorage.setItem("foodfort-orders",JSON.stringify(d));render()}function removeOrder(i){let d=JSON.parse(localStorage.getItem("foodfort-orders")||"[]");d.splice(i,1);localStorage.setItem("foodfort-orders",JSON.stringify(d));render()}render();</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#c90019"><title>Food Fort | لوحة الكاشير</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f4f4;font-family:Tahoma,Arial;color:#222}
+header{background:#c90019;color:white;padding:22px;text-align:center}main{max-width:900px;margin:auto;padding:16px}
+.panel,.order{background:white;border-radius:14px;padding:16px;margin:14px 0;box-shadow:0 2px 8px #0001}
+input{width:100%;padding:12px;border:1px solid #ddd;border-radius:9px;margin:6px 0 12px;font:inherit}
+button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:white;text-decoration:none;font:inherit;cursor:pointer}
+.primary{background:#c90019}.green{background:#16834b}.orange{background:#b76b00}.muted{color:#777;font-size:13px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.order h3{margin:0 0 8px;color:#c90019}.items{padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;line-height:2}
+.total{font-weight:bold;font-size:18px}.status{padding:7px 10px;border-radius:8px;background:#fff0d4;display:inline-block;margin:8px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+</style></head><body>
+<header><h1>Food Fort</h1><div>لوحة طلبات الكاشير</div></header>
+<main>
+<section id="login" class="panel">
+<h2>دخول الكاشير</h2><p class="muted">سجّل الدخول بحساب الكاشير حتى تشوف الطلبات الواردة من جميع الأجهزة.</p>
+<label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" placeholder="name@example.com">
+<label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور">
+<button class="primary" onclick="login()">تسجيل الدخول</button>
+<button onclick="toggleSignup()">إنشاء حساب أول مرة</button>
+<p id="authmsg" aria-live="polite"></p>
+<div id="signupBox" class="hidden"><hr><h3>إنشاء حساب الكاشير</h3><p class="muted">أنشئ الحساب ببريدك. بعد تأكيد البريد، يحتاج الحساب تفعيل صلاحية الكاشير من الإدارة.</p><button class="green" onclick="signup()">إنشاء الحساب</button></div>
+</section>
+<section id="dashboard" class="hidden">
+<div class="bar"><h2>الطلبات الواردة</h2><div><a href="index.html">العودة للمنيو</a> <button onclick="loadOrders()">تحديث</button> <button onclick="logout()">خروج</button></div></div>
+<p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p><div id="orders"></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
+<script>
+const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h");
+let refreshTimer=null;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function message(t,bad=true){const e=document.getElementById("authmsg");e.style.color=bad?"#c90019":"#16834b";e.textContent=t}
+function toggleSignup(){document.getElementById("signupBox").classList.toggle("hidden")}
+async function signup(){
+ const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+ if(!email||password.length<8){message("أدخل البريد وكلمة مرور لا تقل عن 8 أحرف");return}
+ const {data,error}=await db.auth.signUp({email,password});
+ if(error){message(error.message);return}
+ message("تم إنشاء الحساب. إذا وصلتك رسالة تأكيد، افتحها. بعدها أرسل بريد الحساب للإدارة لتفعيل صلاحية الكاشير.",false);
+}
+async function login(){
+ const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+ const {data,error}=await db.auth.signInWithPassword({email,password});
+ if(error){message("تعذر تسجيل الدخول: "+error.message);return}
+ await enterDashboard(data.user);
+}
+async function enterDashboard(user){
+ if(user?.app_metadata?.role!=="cashier"){
+   await db.auth.signOut();
+   message("هذا الحساب غير مفعّل كحساب كاشير بعد. أرسل بريد الحساب للإدارة لتفعيل الصلاحية.");
+   return;
+ }
+ document.getElementById("login").classList.add("hidden");
+ document.getElementById("dashboard").classList.remove("hidden");
+ await loadOrders();
+ if(refreshTimer)clearInterval(refreshTimer);
+ refreshTimer=setInterval(loadOrders,12000);
+}
+async function logout(){if(refreshTimer)clearInterval(refreshTimer);await db.auth.signOut();document.getElementById("dashboard").classList.add("hidden");document.getElementById("login").classList.remove("hidden")}
+async function loadOrders(){
+ const root=document.getElementById("orders");root.innerHTML="<div class='order'>جارٍ تحميل الطلبات...</div>";
+ const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,total_iqd,status,created_at,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
+ if(error){root.innerHTML="<div class='order'>تعذر تحميل الطلبات: "+esc(error.message)+"</div>";return}
+ if(!data?.length){root.innerHTML="<div class='order'>لا توجد طلبات حتى الآن.</div>";return}
+ root.innerHTML=data.map(o=>{
+  const items=(o.order_items||[]).map(x=>esc(x.product_name)+" × "+x.quantity+" = "+Number(x.line_total).toLocaleString("en-US")+" د.ع").join("<br>");
+  const type=o.order_type==="dine_in"?"صالة":"سفري";
+  const statusMap={new:"جديد",preparing:"قيد التحضير",ready:"جاهز",completed:"مكتمل",cancelled:"ملغي"};
+  return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='total'>المجموع: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
+ }).join("");
+}
+async function setStatus(id,status){
+ const {error}=await db.from("orders").update({status}).eq("id",id);
+ if(error){alert("تعذر تحديث حالة الطلب: "+error.message);return}
+ await loadOrders();
+}
+(async()=>{const {data}=await db.auth.getSession();if(data.session)await enterDashboard(data.session.user)})();
+</script></body></html>
