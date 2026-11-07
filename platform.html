@@ -241,5 +241,6 @@ async function openSubscription(id){
 async function toggleRestaurant(id,status){const next=status==="active"?"suspended":"active";if(!confirm(next==="suspended"?"إيقاف هذا المطعم؟":"إعادة تفعيل هذا المطعم؟"))return;const {error}=await db.from("restaurants").update({status:next}).eq("id",id);if(error){alert(error.message);return}await loadRestaurants()}
 function openMenu(slug){window.open("platform-preview.html?restaurant="+encodeURIComponent(slug),"_blank")}
 async function logout(){await db.auth.signOut();showLogin("تم تسجيل الخروج")}
-document.getElementById("loginBtn").addEventListener("click",login);\n(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await enter(data.session.user);else showLogin()}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
+document.getElementById("loginBtn").addEventListener("click",login);
+(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await enter(data.session.user);else showLogin()}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
 </script></body></html>
