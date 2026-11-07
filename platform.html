@@ -63,6 +63,19 @@ button:disabled{opacity:.55;cursor:wait}
 <p id="createMsg" class="muted"></p>
 </div>
 <div class="panel">
+<h2>تخصيص هوية المطعم</h2><p class="muted">تغيير الاسم والشعار والألوان والعنوان يتم من حساب المورّد فقط.</p>
+<div class="field"><label>اختر المطعم</label><select id="identityRestaurant" onchange="loadIdentity()"></select></div>
+<div class="grid">
+<div class="field"><label>اسم المطعم</label><input id="identityName"></div>
+<div class="field"><label>الشعار النصي</label><input id="identityTagline"></div>
+<div class="field"><label>لون الهوية الرئيسي</label><input id="identityPrimary" type="color" value="#c90019"></div>
+<div class="field"><label>اللون الثانوي</label><input id="identityAccent" type="color" value="#178447"></div>
+<div class="field"><label>رابط الشعار</label><input id="identityLogo" placeholder="https://..."></div>
+<div class="field"><label>رقم التواصل</label><input id="identityPhone" placeholder="رقم الهاتف"></div>
+<div class="field" style="grid-column:1/-1"><label>العنوان</label><input id="identityAddress"></div>
+</div><button onclick="saveIdentity()">حفظ الهوية البصرية</button><span id="identityMsg" class="muted" style="margin-right:10px"></span>
+</div>
+<div class="panel">
 <h2>إدارة أسعار الاشتراكات</h2><p class="muted">الأسعار بالدينار العراقي. السعر الذي تختاره هنا يُحفظ كقيمة الاشتراك وقت التفعيل.</p>
 <div class="grid">
 <div class="field"><label>سعر الاشتراك الشهري (د.ع)</label><input id="monthlyPrice" type="number" min="0"></div>
@@ -99,10 +112,14 @@ async function loadAll(){await Promise.all([loadPlans(),loadRestaurants()])}
 async function loadPlans(){const {data,error}=await db.from("subscription_plans").select("*").order("duration_days");if(error){alert(error.message);return}plans=data||[];const m=plans.find(x=>x.plan_code==="monthly"),a=plans.find(x=>x.plan_code==="annual");document.getElementById("monthlyPrice").value=m?.price_iqd??0;document.getElementById("annualPrice").value=a?.price_iqd??0}
 async function savePlanPrices(){for(const p of plans){const value=Number(document.getElementById(p.plan_code==="monthly"?"monthlyPrice":"annualPrice").value);if(!Number.isInteger(value)||value<0){alert("أدخل سعراً صحيحاً");return}const {error}=await db.from("subscription_plans").update({price_iqd:value}).eq("id",p.id);if(error){alert(error.message);return}}document.getElementById("planMsg").textContent="تم حفظ الأسعار";await loadPlans()}
 async function loadRestaurants(){
- const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,created_at,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
+ const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,created_at,tagline,logo_url,primary_color,accent_color,phone,address,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
  if(error){document.getElementById("restaurantsBody").innerHTML="<tr><td colspan='7'>"+esc(error.message)+"</td></tr>";return}
  restaurants=data||[];
- const ids=restaurants.map(x=>x.owner_user_id).filter(Boolean);
+ const identity=document.getElementById("identityRestaurant"),previous=identity.value;
+ identity.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");
+ if(previous&&restaurants.some(r=>r.id===previous))identity.value=previous;
+ if(identity.value)await loadIdentity();
+ const ids=restaurants.map(x=>x.owner_user_id).filter(Boolean);(x=>x.owner_user_id).filter(Boolean);
  let emails={};
  if(ids.length){const {data:members}=await db.from("restaurant_members").select("restaurant_id,user_id,role").in("restaurant_id",restaurants.map(x=>x.id));if(members)emails=Object.fromEntries(members.map(m=>[m.restaurant_id,m.role]));}
  document.getElementById("statRestaurants").textContent=restaurants.length;
@@ -119,6 +136,25 @@ async function loadRestaurants(){
  document.getElementById("restaurantsBody").innerHTML=rows||"<tr><td colspan='7' class='empty'>لا توجد مطاعم بعد</td></tr>";
  document.getElementById("statActive").textContent=active;document.getElementById("statExpired").textContent=expired;document.getElementById("statRevenue").textContent=money(revenue);
  document.getElementById("menuLinks").innerHTML=restaurants.map(r=>"<button class='secondary' onclick=\"openMenu('"+r.slug+"')\">"+esc(r.restaurant_name)+"</button>").join("")||"<span class='muted'>ستظهر هنا روابط المطاعم بعد إضافتها.</span>";
+}
+async function loadIdentity(){
+ const id=document.getElementById("identityRestaurant").value;if(!id)return;
+ const r=restaurants.find(x=>x.id===id);if(!r)return;
+ document.getElementById("identityName").value=r.restaurant_name||"";
+ document.getElementById("identityTagline").value=r.tagline||"";
+ document.getElementById("identityPrimary").value=r.primary_color||"#c90019";
+ document.getElementById("identityAccent").value=r.accent_color||"#178447";
+ document.getElementById("identityLogo").value=r.logo_url||"";
+ document.getElementById("identityPhone").value=r.phone||"";
+ document.getElementById("identityAddress").value=r.address||"";
+}
+async function saveIdentity(){
+ const id=document.getElementById("identityRestaurant").value;if(!id)return;
+ const payload={restaurant_name:document.getElementById("identityName").value.trim(),tagline:document.getElementById("identityTagline").value.trim(),primary_color:document.getElementById("identityPrimary").value,accent_color:document.getElementById("identityAccent").value,logo_url:document.getElementById("identityLogo").value.trim()||null,phone:document.getElementById("identityPhone").value.trim()||null,address:document.getElementById("identityAddress").value.trim()||null,updated_at:new Date().toISOString()};
+ if(payload.restaurant_name.length<2){alert("اسم المطعم قصير جداً");return}
+ const {error}=await db.from("restaurants").update(payload).eq("id",id);
+ if(error){alert("تعذر حفظ الهوية: "+error.message);return}
+ document.getElementById("identityMsg").textContent="تم حفظ الهوية";await loadRestaurants();
 }
 async function createRestaurant(){
  const b=document.getElementById("createBtn"),msg=document.getElementById("createMsg");b.disabled=true;msg.textContent="جارٍ إنشاء المطعم وإرسال الدعوة...";
