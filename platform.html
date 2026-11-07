@@ -141,7 +141,7 @@ async function openSubscription(id){
  await loadRestaurants();alert("تم تفعيل الاشتراك حتى "+date(end.toISOString()));
 }
 async function toggleRestaurant(id,status){const next=status==="active"?"suspended":"active";if(!confirm(next==="suspended"?"إيقاف هذا المطعم؟":"إعادة تفعيل هذا المطعم؟"))return;const {error}=await db.from("restaurants").update({status:next}).eq("id",id);if(error){alert(error.message);return}await loadRestaurants()}
-function openMenu(slug){window.open("index.html?restaurant="+encodeURIComponent(slug),"_blank")}
+function openMenu(slug){window.open("platform-preview.html?restaurant="+encodeURIComponent(slug),"_blank")}
 async function logout(){await db.auth.signOut();showLogin("تم تسجيل الخروج")}
 (async()=>{const {data}=await db.auth.getSession();if(data.session)await enter(data.session.user);else showLogin()})();
 </script></body></html>
