@@ -119,7 +119,8 @@ button:disabled{opacity:.55;cursor:wait}
 <script>
 const URL="https://gghlmpxmiivrkiltydxf.supabase.co";
 const KEY="sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIH1D8h";
-if(!window.supabase?.createClient){document.getElementById("loginMsg").textContent="تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.";}\nconst db=window.supabase?.createClient?window.supabase.createClient(URL,KEY,{auth:{storageKey:"foodfort_platform_auth"}}):null;
+if(!window.supabase?.createClient){document.getElementById("loginMsg").textContent="تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة."}
+const db=window.supabase?.createClient?window.supabase.createClient(URL,KEY,{auth:{storageKey:"foodfort_platform_auth"}}):null;
 let plans=[],restaurants=[];
 const money=n=>Number(n||0).toLocaleString("en-US");
 const date=s=>s?new Date(s).toLocaleDateString("ar-IQ"):"-";
