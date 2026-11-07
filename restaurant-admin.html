@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#142033"><title>إدارة المطعم</title>
+<style>
+:root{--red:#c90019;--bg:#f3f5f8;--ink:#1b2431;--muted:#77808e;--line:#e6eaf0;--green:#16834b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif}
+header{background:linear-gradient(130deg,#142033,#263a57);color:white;padding:22px 16px}
+.head,.wrap{max-width:1100px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:20px;font-weight:900}.brand small{display:block;color:#c4cede;font-size:12px;font-weight:400;margin-top:7px}
+.wrap{padding:14px 16px 40px}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:17px;margin:14px 0;box-shadow:0 5px 20px #1d2d4308}
+h2{font-size:18px;margin:0 0 14px}h3{font-size:15px;margin:0 0 10px}.muted{font-size:12px;color:var(--muted);line-height:1.7}
+#login,#app{display:none}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:#f7f8fb;border:1px solid var(--line);border-radius:12px;padding:13px}.stat b{display:block;font-size:23px;margin-top:6px}
+label{display:block;font-size:12px;font-weight:bold;margin:0 0 6px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #dce2e9;border-radius:10px;font:inherit;background:#fff;min-width:0}
+textarea{min-height:85px;resize:vertical}.field{margin-bottom:10px}
+button{border:0;border-radius:10px;padding:10px 13px;font:inherit;font-weight:bold;cursor:pointer;background:#17263b;color:#fff}
+button:disabled{opacity:.5;cursor:wait}.green{background:var(--green)}.red{background:#fff0f1;color:#b10e24;border:1px solid #ffd6dc}.soft{background:#eef2f6;color:#26354b}
+.tabs{display:flex;gap:8px;margin:14px 0;overflow:auto}.tabs button{white-space:nowrap;background:#e7ebf1;color:#334155}.tabs button.active{background:var(--red);color:#fff}
+.actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.order{border:1px solid var(--line);border-radius:13px;padding:14px;margin:10px 0;background:#fff}
+.orderhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.orderitems{background:#f8f9fb;border-radius:10px;padding:10px;margin:10px 0;font-size:13px;line-height:1.9}
+.pill{display:inline-block;padding:5px 9px;border-radius:30px;background:#eaf7ef;color:#137543;font-size:11px;font-weight:bold}.pill.wait{background:#fff4da;color:#8a5c00}.pill.off{background:#fff0f1;color:#b10e24}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}td,th{text-align:right;padding:10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);background:#fafbfc}
+.product{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.product:last-child{border-bottom:0}.empty{text-align:center;color:var(--muted);padding:25px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.head{align-items:flex-start;flex-direction:column}.panel{padding:13px}}
+</style></head>
+<body>
+<header><div class="head"><div class="brand" id="restaurantTitle">إدارة المطعم<small>لوحة الطلبات والمنيو</small></div><div id="accountInfo" class="muted" style="color:#d5deea"></div></div></header>
+<main class="wrap">
+<section id="login" class="panel" style="max-width:430px;margin:28px auto">
+<h2>دخول إدارة المطعم</h2><p class="muted">استخدم البريد الذي وصلته دعوة إدارة المطعم.</p>
+<div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username"></div>
+<div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div>
+<button id="loginBtn" onclick="login()">تسجيل الدخول</button><p id="loginMsg" class="muted"></p>
+</section>
+<section id="app">
+<div class="stats">
+<div class="stat"><span class="muted">طلبات اليوم</span><b id="todayCount">0</b></div>
+<div class="stat"><span class="muted">كل الطلبات</span><b id="allCount">0</b></div>
+<div class="stat"><span class="muted">المبيعات المؤكدة</span><b id="revenue">0</b><span class="muted">د.ع</span></div>
+</div>
+<div class="tabs"><button id="ordersTab" class="active" onclick="showTab('orders')">الطلبات</button><button id="menuTab" onclick="showTab('menu')">إدارة المنيو</button></div>
+<section id="ordersPanel" class="panel"><div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">الطلبات الواردة</h2><p class="muted">تتحدث القائمة تلقائياً. لا يمكن بدء التحضير قبل تأكيد الدفع.</p></div><button class="soft" onclick="loadOrders()">تحديث</button></div><div id="ordersList"><div class="empty">جارٍ تحميل الطلبات...</div></div></section>
+<section id="menuPanel" class="panel" style="display:none">
+<h2>إدارة التصنيفات والأطباق</h2><p class="muted">هنا تدير محتوى منيو مطعمك فقط. هوية المنصة واسم المطعم والشعار والثيم يديرها المورّد.</p>
+<div class="grid">
+<div class="field"><label>إضافة تصنيف جديد</label><input id="categoryName" placeholder="مثلاً: المشويات"><button class="green" style="margin-top:8px" onclick="addCategory()">إضافة التصنيف</button></div>
+<div class="field"><label>التصنيف الحالي</label><select id="productCategory"></select><label style="margin-top:9px">اسم الطبق</label><input id="productName" placeholder="اسم الطبق"><div class="grid"><div><label>السعر الأساسي (د.ع)</label><input id="productPrice" type="number" min="0"></div><div><label>متاح للطلب</label><select id="productAvailable"><option value="true">متاح</option><option value="false">غير متاح</option></select></div></div><label>الأحجام (اختياري، كل حجم بسطر: الاسم:السعر)</label><textarea id="productSizes" placeholder="صغير:5000&#10;وسط:7000&#10;كبير:9000"></textarea><div class="actions"><button class="green" id="saveProductBtn" onclick="saveProduct()">إضافة الطبق</button><button class="soft" id="cancelEditBtn" style="display:none" onclick="resetProductForm()">إلغاء التعديل</button></div></div>
+</div>
+<div class="grid" style="margin-top:15px"><div><h3>التصنيفات</h3><div id="categoriesList"></div></div><div><h3>الأطباق</h3><div id="productsList"></div></div></div>
+</section>
+<div class="actions" style="justify-content:flex-end"><button class="soft" onclick="logout()">تسجيل الخروج</button></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
+<script>
+const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIH1D8h",{auth:{storageKey:"foodfort_restaurant_"+(new URLSearchParams(location.search).get("restaurant")||"food-fort")}});
+const restaurantSlug=new URLSearchParams(location.search).get("restaurant")||"food-fort";
+let restaurantId=null,restaurant=null,categories=[],products=[],editingProduct=null,refreshTimer=null;
+const money=n=>Number(n||0).toLocaleString("en-US");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const orderStatus={new:"جديد",preparing:"قيد التحضير",ready:"جاهز",completed:"مكتمل",cancelled:"ملغي"};
+const paymentStatus={awaiting_payment:"بانتظار الدفع",awaiting_verification:"بانتظار التحقق",paid:"تم تأكيد الدفع",failed:"فشل الدفع",refunded:"مسترجع",expired:"منتهي"};
+function showLogin(msg=""){document.getElementById("login").style.display="block";document.getElementById("app").style.display="none";document.getElementById("loginMsg").textContent=msg}
+async function login(){const b=document.getElementById("loginBtn");b.disabled=true;const {data,error}=await db.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("password").value});b.disabled=false;if(error){showLogin("تعذر الدخول: "+error.message);return}await enter(data.user)}
+async function enter(user){
+ const r=await db.from("restaurants").select("id,restaurant_name,status,primary_color,accent_color").eq("slug",restaurantSlug).maybeSingle();
+ if(r.error||!r.data){await db.auth.signOut();showLogin("المطعم غير موجود أو اشتراكه غير فعال.");return}
+ const m=await db.from("restaurant_members").select("role").eq("restaurant_id",r.data.id).eq("user_id",user.id).maybeSingle();
+ if(m.error||!m.data){await db.auth.signOut();showLogin("هذا الحساب غير مرتبط بإدارة هذا المطعم.");return}
+ if(r.data.status!=="active"){await db.auth.signOut();showLogin("هذا المطعم موقوف حالياً. تواصل مع المورّد.");return}
+ restaurant=r.data;restaurantId=r.data.id;
+ document.getElementById("restaurantTitle").innerHTML=esc(restaurant.restaurant_name)+'<small>لوحة الطلبات وإدارة المنيو</small>';
+ document.getElementById("accountInfo").textContent=user.email||"حساب المطعم";
+ document.documentElement.style.setProperty("--red",restaurant.primary_color||"#c90019");
+ document.getElementById("login").style.display="none";document.getElementById("app").style.display="block";
+ await Promise.all([loadOrders(),loadMenu()]);
+ if(refreshTimer)clearInterval(refreshTimer);refreshTimer=setInterval(loadOrders,15000);
+}
+function showTab(tab){document.getElementById("ordersPanel").style.display=tab==="orders"?"block":"none";document.getElementById("menuPanel").style.display=tab==="menu"?"block":"none";document.getElementById("ordersTab").classList.toggle("active",tab==="orders");document.getElementById("menuTab").classList.toggle("active",tab==="menu")}
+async function loadOrders(){
+ if(!restaurantId)return;
+ const root=document.getElementById("ordersList");root.innerHTML='<div class="empty">جارٍ تحميل الطلبات...</div>';
+ const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,payment_method_name,payment_status,payment_proof_url,order_items(product_name,quantity,unit_price,line_total)").eq("restaurant_id",restaurantId).order("created_at",{ascending:false}).limit(100);
+ if(error){root.innerHTML='<div class="empty">تعذر تحميل الطلبات: '+esc(error.message)+'</div>';return}
+ const rows=data||[],today=new Date().toLocaleDateString("en-CA");
+ document.getElementById("todayCount").textContent=rows.filter(o=>new Date(o.created_at).toLocaleDateString("en-CA")===today).length;
+ document.getElementById("allCount").textContent=rows.length;
+ document.getElementById("revenue").textContent=money(rows.filter(o=>o.payment_status==="paid").reduce((n,o)=>n+Number(o.total_iqd||0),0));
+ root.innerHTML=rows.map(o=>{
+  const items=(o.order_items||[]).map(x=>'<div>'+esc(x.product_name)+' × '+x.quantity+' <b>'+money(x.line_total)+' د.ع</b></div>').join("");
+  const proof=o.payment_proof_url?'<button class="soft" onclick="viewProof(\''+encodeURIComponent(o.payment_proof_url)+'\')">عرض قسيمة التحويل</button>':"";
+  const payment=o.payment_status==="paid"?'pill':'pill wait';
+  return '<article class="order"><div class="orderhead"><div><b>طلب #'+o.order_number+'</b><div class="muted">'+new Date(o.created_at).toLocaleString("ar-IQ")+'</div><div style="margin-top:6px">'+esc(o.customer_name)+' · '+esc(o.customer_phone)+'</div><div class="muted">'+(o.order_type==="dine_in"?"صالة · طاولة "+o.table_number:"سفري")+'</div></div><div><span class="pill">'+esc(orderStatus[o.status]||o.status)+'</span> <span class="'+payment+'">'+esc(paymentStatus[o.payment_status]||o.payment_status)+'</span></div></div><div class="orderitems">'+items+'</div><div><b>المجموع: '+money(o.subtotal_iqd)+' د.ع</b>'+(o.discount_amount?'<br><span class="muted">الخصم '+esc(o.discount_code||"")+' : '+money(o.discount_amount)+' د.ع</span>':'')+'<h3 style="margin:7px 0">الإجمالي: '+money(o.total_iqd)+' د.ع</h3><div class="muted">الدفع: '+esc(o.payment_method_name||"غير محدد")+'</div></div><div class="actions" style="margin-top:10px">'+(o.payment_status!=="paid"?'<button class="green" onclick="confirmPayment(\''+o.id+'\')">تأكيد استلام الدفع</button>':'')+proof+(o.status==="new"&&o.payment_status==="paid"?'<button onclick="setStatus(\''+o.id+'\',\'preparing\')">بدء التحضير</button>':"")+(o.status==="preparing"?'<button onclick="setStatus(\''+o.id+'\',\'ready\')">جاهز</button>':"")+(o.status==="ready"?'<button onclick="setStatus(\''+o.id+'\',\'completed\')">إكمال الطلب</button>':"")+'</div></article>';
+ }).join("")||'<div class="empty">لا توجد طلبات حتى الآن.</div>';
+}
+async function confirmPayment(id){if(!confirm("تأكيد استلام قيمة هذا الطلب؟"))return;const {error}=await db.from("orders").update({payment_status:"paid"}).eq("id",id).eq("restaurant_id",restaurantId);if(error){alert("تعذر تأكيد الدفع: "+error.message);return}await loadOrders()}
+async function setStatus(id,status){const {error}=await db.from("orders").update({status}).eq("id",id).eq("restaurant_id",restaurantId);if(error){alert("تعذر تحديث حالة الطلب: "+error.message);return}await loadOrders()}
+async function viewProof(encoded){const path=decodeURIComponent(encoded);const {data,error}=await db.storage.from("foodfort-payment-proofs").createSignedUrl(path,300);if(error){alert(error.message);return}window.open(data.signedUrl,"_blank")}
+async function loadMenu(){
+ const [c,p]=await Promise.all([
+  db.from("menu_categories").select("id,name,sort_order,is_active").eq("restaurant_id",restaurantId).order("sort_order"),
+  db.from("menu_products").select("id,category_id,name,description,price_iqd,size_options,is_available,sort_order").eq("restaurant_id",restaurantId).order("sort_order")
+ ]);
+ if(c.error||p.error){alert("تعذر تحميل المنيو: "+(c.error||p.error).message);return}
+ categories=c.data||[];products=p.data||[];renderMenu();
+}
+function renderMenu(){
+ const select=document.getElementById("productCategory");select.innerHTML=categories.filter(c=>c.is_active).map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join("")||'<option value="">أضف تصنيفاً أولاً</option>';
+ document.getElementById("categoriesList").innerHTML=categories.map(c=>'<div class="product"><span>'+esc(c.name)+' '+(!c.is_active?'<span class="pill off">مخفي</span>':'')+'</span><button class="red" onclick="deleteCategory(\''+c.id+'\')">حذف</button></div>').join("")||'<div class="empty">لا توجد تصنيفات</div>';
+ document.getElementById("productsList").innerHTML=products.map(p=>'<div class="product"><div><b>'+esc(p.name)+'</b><div class="muted">'+(p.size_options?.length?p.size_options.map(z=>esc(z.name)+': '+money(z.price_iqd)).join(' · '):money(p.price_iqd)+' د.ع')+' · '+(p.is_available?'متاح':'غير متاح')+'</div></div><div class="actions"><button class="soft" onclick="editProduct(\''+p.id+'\')">تعديل</button><button class="red" onclick="deleteProduct(\''+p.id+'\')">حذف</button></div></div>').join("")||'<div class="empty">لا توجد أطباق</div>';
+}
+function parseSizes(text){const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);const out=[];for(const line of lines){const i=line.lastIndexOf(":");if(i<1)throw new Error("صيغة الحجم يجب أن تكون: الاسم:السعر");const name=line.slice(0,i).trim(),price=Number(line.slice(i+1).trim());if(!name||!Number.isInteger(price)||price<0)throw new Error("تحقق من اسم وسعر كل حجم");out.push({name,price_iqd:price})}return out}
+async function saveProduct(){
+ const name=document.getElementById("productName").value.trim(),categoryId=document.getElementById("productCategory").value,price=Number(document.getElementById("productPrice").value),available=document.getElementById("productAvailable").value==="true";
+ if(name.length<1||!categoryId||!Number.isInteger(price)||price<0){alert("أدخل اسم الطبق والتصنيف والسعر بصورة صحيحة");return}
+ let sizes;try{sizes=parseSizes(document.getElementById("productSizes").value)}catch(e){alert(e.message);return}
+ const payload={restaurant_id:restaurantId,category_id:categoryId,name,price_iqd:sizes.length?Math.min(...sizes.map(x=>x.price_iqd)):price,size_options:sizes,is_available:available};
+ let result;if(editingProduct)result=await db.from("menu_products").update(payload).eq("id",editingProduct);else result=await db.from("menu_products").insert(payload);
+ if(result.error){alert("تعذر حفظ الطبق: "+result.error.message);return}resetProductForm();await loadMenu()
+}
+function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;editingProduct=id;document.getElementById("productCategory").value=p.category_id;document.getElementById("productName").value=p.name;document.getElementById("productPrice").value=p.price_iqd;document.getElementById("productAvailable").value=String(p.is_available);document.getElementById("productSizes").value=(p.size_options||[]).map(z=>z.name+":"+z.price_iqd).join("\n");document.getElementById("saveProductBtn").textContent="حفظ التعديلات";document.getElementById("cancelEditBtn").style.display="inline-block"}
+function resetProductForm(){editingProduct=null;["productName","productPrice","productSizes"].forEach(id=>document.getElementById(id).value="");document.getElementById("productAvailable").value="true";document.getElementById("saveProductBtn").textContent="إضافة الطبق";document.getElementById("cancelEditBtn").style.display="none"}
+async function addCategory(){const name=document.getElementById("categoryName").value.trim();if(name.length<1){alert("اكتب اسم التصنيف");return}const {error}=await db.from("menu_categories").insert({restaurant_id:restaurantId,name,sort_order:categories.length});if(error){alert("تعذر إضافة التصنيف: "+error.message);return}document.getElementById("categoryName").value="";await loadMenu()}
+async function deleteProduct(id){if(!confirm("حذف هذا الطبق نهائياً؟"))return;const {error}=await db.from("menu_products").delete().eq("id",id).eq("restaurant_id",restaurantId);if(error){alert(error.message);return}await loadMenu()}
+async function deleteCategory(id){if(!confirm("حذف التصنيف وكل الأطباق التابعة له؟"))return;const {error}=await db.from("menu_categories").delete().eq("id",id).eq("restaurant_id",restaurantId);if(error){alert(error.message);return}await loadMenu()}
+async function logout(){if(refreshTimer)clearInterval(refreshTimer);await db.auth.signOut();showLogin("تم تسجيل الخروج")}
+(async()=>{const {data}=await db.auth.getSession();if(data.session)await enter(data.session.user);else showLogin()})();
+</script></body></html>
