@@ -8,7 +8,7 @@
 </style></head><body>
 <header><div class="logo">🍴 Food Fort</div><p>اختار وجبتك وخلي الباقي علينا</p><div class="toplinks"><a href="#menu">المنيو</a><a href="track-order.html">متابعة الطلب</a><a href="orders.html">صفحة الكاشير</a></div></header>
 <main class="wrap"><div class="notice">جميع الأسعار بالدينار العراقي. اختار وجباتك وأضفها للسلة، ثم حدد صالة أو سفري.</div><nav class="tabs" id="tabs"></nav><div id="menu"></div>
-<section class="cartbox" id="cart"><h2 class="section-title">🛒 سلة الطلبات</h2><div id="cartitems">السلة فارغة حالياً</div><h3>المجموع قبل الخصم: <span id="subtotal">0</span> د.ع</h3><div class="discountbox"><b>🎟️ عندك كود خصم؟</b><div class="discountrow"><input class="field" id="discountCode" placeholder="أدخل كود الخصم" autocomplete="off" oninput="clearDiscountPreview()"><button class="add" type="button" onclick="applyDiscount()">تطبيق</button></div><p id="discountMsg" class="discountinfo" aria-live="polite"></p><div id="discountLine" style="display:none;color:#16834b;font-weight:bold">الخصم: <span id="discountValue">0</span> د.ع</div></div><h3>المبلغ النهائي: <span id="total">0</span> د.ع</h3><h3>طريقة الاستلام</h3><div class="choice"><label><input type="radio" name="service" value="صالة" checked onchange="toggleTable()"> صالة</label><label><input type="radio" name="service" value="سفري" onchange="toggleTable()"> سفري</label></div><div id="tablewrap"><label>رقم الطاولة</label><select class="field" id="table"><option value="">اختر رقم الطاولة</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></div><label>اسم الزبون</label><input class="field" id="customer" placeholder="الاسم"><label>رقم الهاتف</label><input class="field" id="phone" inputmode="tel" placeholder="07xxxxxxxxx"><button class="submit" onclick="placeOrder()">إرسال الطلب للكاشير</button><p id="msg" aria-live="polite"></p></section></main><footer>Food Fort © المنيو الإلكتروني</footer>
+<section class="cartbox" id="cart"><h2 class="section-title">🛒 سلة الطلبات</h2><div id="cartitems">السلة فارغة حالياً</div><h3>المجموع قبل الخصم: <span id="subtotal">0</span> د.ع</h3><div class="discountbox"><b>🎟️ عندك كود خصم؟</b><div class="discountrow"><input class="field" id="discountCode" placeholder="أدخل كود الخصم" autocomplete="off" oninput="clearDiscountPreview()"><button class="add" type="button" onclick="applyDiscount()">تطبيق</button></div><p id="discountMsg" class="discountinfo" aria-live="polite"></p><div id="discountLine" style="display:none;color:#16834b;font-weight:bold">الخصم: <span id="discountValue">0</span> د.ع</div></div><h3>المبلغ النهائي: <span id="total">0</span> د.ع</h3><h3>طريقة الاستلام</h3><div class="choice"><label><input type="radio" name="service" value="صالة" checked onchange="toggleTable()"> صالة</label><label><input type="radio" name="service" value="سفري" onchange="toggleTable()"> سفري</label></div><div id="tablewrap"><label>رقم الطاولة</label><select class="field" id="table"><option value="">اختر رقم الطاولة</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></div><label>اسم الزبون</label><input class="field" id="customer" placeholder="الاسم"><label>رقم الهاتف</label><input class="field" id="phone" inputmode="tel" placeholder="07xxxxxxxxx"><div class="panel" style="background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;margin:12px 0"><h3>طريقة الدفع</h3><select class="field" id="paymentMethod" onchange="showPaymentInstructions()"></select><div id="paymentInstructions" class="muted"></div></div><button class="submit" onclick="placeOrder()">إرسال الطلب للكاشير</button><p id="msg" aria-live="polite"></p></section></main><footer>Food Fort © المنيو الإلكتروني</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL="https://gghlmpxmiivrkiltydxf.supabase.co";
@@ -27,12 +27,31 @@ const groups=[
 {name:"مندي تراث",items:[["مندي دجاج حبة كاملة",17000],["مندي دجاج نصف حبة",9000],["ربع دجاج مندي",5500],["مندي لحم",26500],["مندي مشكل",35000],["تمن مندي كبير",6000],["تمن مندي وسط",3000],["مرق فاصوليا",1000]]},
 {name:"المقرمشات والمقبلات والدايت",items:[["فطر مقرمش",4500],["حلقات البصل",4000],["أجنحة مقرمشة",3500],["أجنحة باربيكيو",4000],["أجنحة هني ماستر",4000],["خبز بالثوم",4000],["ميني ببروني",4500],["فنكر",2000],["فنكر مقرمش",2500],["فنكر بالجبن",3000],["ماعون مقبلات صغير",2500],["ماعون مقبلات وسط",5000],["ماعون مقبلات كبير",8000],["سلطة سيزر",7000],["وجبة دايت 200 غرام",5000]]}
 ];
-let cart=[];let appliedDiscountCode="";let appliedDiscount=0;let discountCheck=0;const money=n=>Number(n).toLocaleString("en-US");
+let paymentMethods=[];let cart=[];let appliedDiscountCode="";let appliedDiscount=0;let discountCheck=0;const money=n=>Number(n).toLocaleString("en-US");
 function render(){document.getElementById("tabs").innerHTML=groups.map((g,i)=>'<button class="'+(i===0?'active':'')+'" onclick="showGroup('+i+')">'+g.name+'</button>').join("");document.getElementById("menu").innerHTML=groups.map((g,i)=>'<section id="g'+i+'"><h2 class="section-title">'+g.name+'</h2><div class="grid">'+g.items.map(it=>{if(Array.isArray(it[1]))return '<article class="item"><h3>'+it[0]+'</h3><p>اختار الحجم</p>'+it[1].map((p,k)=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:4px"><span>'+g.sizes[k]+': <b class="price">'+money(p)+'</b></span><button class="add" onclick="add(\''+it[0]+' - '+g.sizes[k]+'\','+p+')">+</button></div>').join("")+'</article>';return '<article class="item"><h3>'+it[0]+'</h3><div class="price">'+money(it[1])+' د.ع</div><button class="add" onclick="add(\''+it[0]+'\','+it[1]+')">أضف للسلة</button></article>'}).join("")+'</div></section>').join("")}
 function showGroup(i){document.getElementById("g"+i).scrollIntoView({behavior:"smooth"});document.querySelectorAll(".tabs button").forEach((b,k)=>b.classList.toggle("active",i===k))}
 function add(name,price){let x=cart.find(x=>x.name===name);if(x)x.qty++;else cart.push({name:name,price:Number(price),qty:1});drawCart()}
 function cartSubtotal(){return cart.reduce((s,x)=>s+x.price*x.qty,0)}
 function drawCart(){document.getElementById("cartitems").innerHTML=cart.length?cart.map((x,i)=>'<div class="cartline"><div><b>'+x.name+'</b><br><small>'+money(x.price*x.qty)+' د.ع</small></div><div class="qty"><button onclick="change('+i+',-1)">−</button> '+x.qty+' <button onclick="change('+i+',1)">+</button></div></div>').join(""):"السلة فارغة حالياً";document.getElementById("subtotal").textContent=money(cartSubtotal());document.getElementById("total").textContent=money(Math.max(0,cartSubtotal()-appliedDiscount));document.getElementById("discountValue").textContent=money(appliedDiscount);document.getElementById("discountLine").style.display=appliedDiscount?"block":"none";if(appliedDiscountCode&&cart.length)refreshDiscountPreview(false);else if(!cart.length){appliedDiscount=0;appliedDiscountCode="";document.getElementById("discountMsg").textContent="";document.getElementById("discountLine").style.display="none";document.getElementById("total").textContent="0";}}
+const htmlEsc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function loadPaymentMethods(){
+ const select=document.getElementById("paymentMethod");
+ const {data,error}=await db.from("restaurant_payment_methods").select("id,method_name,method_type,account_name,account_details,instructions,qr_image_url").eq("is_enabled",true).order("sort_order");
+ if(error){select.innerHTML='<option value="">تعذر تحميل وسائل الدفع</option>';document.getElementById("paymentInstructions").textContent=error.message;return;}
+ paymentMethods=data||[];
+ select.innerHTML=paymentMethods.map(m=>'<option value="'+m.id+'">'+htmlEsc(m.method_name)+'</option>').join("")||'<option value="">لا توجد وسيلة دفع</option>';
+ showPaymentInstructions();
+}
+function showPaymentInstructions(){
+ const m=paymentMethods.find(x=>x.id===document.getElementById("paymentMethod").value),box=document.getElementById("paymentInstructions");
+ if(!m){box.textContent="اختر وسيلة دفع متاحة";return;}
+ let h=htmlEsc(m.instructions||"");
+ if(m.account_name)h+='<br>اسم الحساب: '+htmlEsc(m.account_name);
+ if(m.account_details)h+='<br>بيانات التحويل: '+htmlEsc(m.account_details);
+ if(m.qr_image_url)h+='<br><img alt="QR" style="max-width:180px" src="'+htmlEsc(m.qr_image_url)+'">';
+ if(m.method_type!=="cashier")h+='<br><b>لن يبدأ التحضير قبل تأكيد وصول المبلغ من الإدارة.</b>';
+ box.innerHTML=h;
+}
 async function ensureAnonymousSession(){let {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session){const signed=await db.auth.signInAnonymously();if(signed.error)throw signed.error;}}
 async function refreshDiscountPreview(showSuccess=true){const token=++discountCheck;const code=document.getElementById("discountCode").value.trim().toUpperCase();const subtotal=cartSubtotal();if(!code||!subtotal){appliedDiscountCode="";appliedDiscount=0;drawCartNoRefresh();return false;}try{await ensureAnonymousSession();const {data,error}=await db.rpc("preview_foodfort_discount",{p_discount_code:code,p_subtotal:subtotal});if(error)throw error;if(token!==discountCheck)return false;const row=Array.isArray(data)?data[0]:data;appliedDiscountCode=code;appliedDiscount=Number(row.discount_amount)||0;document.getElementById("discountMsg").textContent=showSuccess?"تم تطبيق كود الخصم بنجاح":"تم تحديث قيمة الخصم";document.getElementById("discountMsg").style.color="#16834b";document.getElementById("discountValue").textContent=money(appliedDiscount);document.getElementById("discountLine").style.display=appliedDiscount?"block":"none";document.getElementById("total").textContent=money(Number(row.total_iqd));return true;}catch(e){if(token!==discountCheck)return false;appliedDiscountCode="";appliedDiscount=0;document.getElementById("discountMsg").textContent=e.message||"كود الخصم غير صالح";document.getElementById("discountMsg").style.color="#c90019";document.getElementById("discountLine").style.display="none";document.getElementById("total").textContent=money(subtotal);return false;}}
 function drawCartNoRefresh(){document.getElementById("subtotal").textContent=money(cartSubtotal());document.getElementById("total").textContent=money(cartSubtotal());document.getElementById("discountValue").textContent="0";document.getElementById("discountLine").style.display="none";}
@@ -45,6 +64,8 @@ async function placeOrder(){
  if(sending)return;
  if(!cart.length){alert("أضف وجبة واحدة على الأقل");return}
  const service=document.querySelector('[name=service]:checked').value;
+ const paymentMethodId=document.getElementById("paymentMethod")?.value;
+ if(!paymentMethodId){alert("اختر طريقة الدفع");return}
  const table=document.getElementById("table").value;
  if(service==="صالة"&&!table){alert("حدد رقم الطاولة");return}
  const name=document.getElementById("customer").value.trim();
@@ -61,7 +82,7 @@ async function placeOrder(){
      if(signed.error)throw signed.error;
    }
    const payload=cart.map(x=>({name:x.name,price:x.price,qty:x.qty}));
-   const {data,error}=await db.rpc("create_foodfort_order",{
+   const {data,error}=await db.rpc("create_foodfort_order_v2",{
      p_customer_name:name,
      p_customer_phone:phone,
      p_order_type:service==="صالة"?"dine_in":"takeaway",
@@ -86,5 +107,5 @@ async function placeOrder(){
    sending=false;btn.disabled=false;btn.textContent="إرسال الطلب للكاشير";
  }
 }
-render();drawCart();toggleTable();
+render();drawCart();toggleTable();loadPaymentMethods();
 </script></body></html>
