@@ -31,7 +31,10 @@
 const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h",{auth:{storageKey:"foodfort_customer_auth"}});
 const money=n=>Number(n||0).toLocaleString("en-US");
 const labels={new:"تم استلام الطلب",preparing:"طلبك قيد التحضير",ready:"طلبك جاهز",completed:"تم إكمال الطلب",cancelled:"تم إلغاء الطلب"};
-async function ensureSession(){const {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session){const x=await db.auth.signInAnonymously();if(x.error)throw x.error;}}
+async function ensureSession(){const {data:{session},error}=await db.auth.getSession();if(error)throw error;
+ if(session&&!session.user?.is_anonymous)await db.auth.signOut();
+ const {data:{session:active},error:activeError}=await db.auth.getSession();if(activeError)throw activeError;
+ if(!active||!active.user?.is_anonymous){const x=await db.auth.signInAnonymously();if(x.error)throw x.error;}}
 async function trackOrder(){
  const number=document.getElementById("orderNumber").value.trim(),phone=document.getElementById("phone").value.trim();
  const msg=document.getElementById("msg"),btn=document.getElementById("searchBtn");
@@ -42,10 +45,10 @@ async function trackOrder(){
   await ensureSession();
   const {data,error}=await db.rpc("track_foodfort_order",{p_order_number:number,p_customer_phone:phone});
   if(error)throw error;
-  const o=data;
-  const orderStatus=labels[o.status]||o.status||"غير معروف";
+  const o=Array.isArray(data)?data[0]:data;if(!o||typeof o!=="object")throw new Error("لم تصل بيانات الطلب بشكل صحيح");
+  const orderStatus=labels[o.status]||o.status||"غير معروف";\n  const paymentLabels={awaiting_payment:"بانتظار الدفع عند الكاشير",awaiting_verification:"بانتظار التحقق من التحويل",paid:"تم تأكيد الدفع",failed:"تعذر الدفع",refunded:"تم إرجاع المبلغ",expired:"انتهت مهلة الدفع"};
   document.getElementById("orderMeta").textContent="طلب رقم "+o.order_number+" · "+new Date(o.created_at).toLocaleString("ar-IQ");
-  document.getElementById("statusText").textContent=orderStatus;
+  document.getElementById("statusText").textContent=orderStatus+" · "+(paymentLabels[o.payment_status]||"حالة الدفع غير محددة");
   const sequence=["new","preparing","ready","completed"];
   const idx=sequence.indexOf(o.status);
   document.getElementById("progress").innerHTML=o.status==="cancelled"?"<div class='step current'><span class='dot'></span><b>تم إلغاء الطلب</b></div>":sequence.map((s,i)=>"<div class='step "+(i<idx?"done":i===idx?"current":"")+""><span class='dot'></span><span>"+labels[s]+"</span></div>").join("");
