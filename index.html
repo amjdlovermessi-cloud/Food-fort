@@ -67,6 +67,10 @@ async function placeOrder(){
  const service=document.querySelector('[name=service]:checked').value;
  const paymentMethodId=document.getElementById("paymentMethod")?.value;
  if(!paymentMethodId){alert("اختر طريقة الدفع");return}
+ const selectedPayment=paymentMethods.find(m=>m.id===paymentMethodId);
+ const proofFile=document.getElementById("paymentProof")?.files?.[0]||null;
+ if(selectedPayment?.require_proof&&!proofFile){alert("هذه الوسيلة تتطلب إرفاق قسيمة التحويل");return}
+ if(proofFile&&(proofFile.size>5242880||!["image/jpeg","image/png","image/webp","application/pdf"].includes(proofFile.type))){alert("القسيمة يجب أن تكون صورة أو PDF وبحجم لا يتجاوز 5MB");return}
  const table=document.getElementById("table").value;
  if(service==="صالة"&&!table){alert("حدد رقم الطاولة");return}
  const name=document.getElementById("customer").value.trim();
@@ -94,14 +98,24 @@ async function placeOrder(){
    });
    if(error)throw error;
    const result=Array.isArray(data)?data[0]:data;
+   let proofUploaded=false,proofWarning="";
+   if(selectedPayment?.require_proof&&proofFile){
+    const {data:{session:currentSession}}=await db.auth.getSession();
+    const ext=proofFile.name.split(".").pop().toLowerCase();
+    const objectPath=currentSession.user.id+"/"+result.order_number+"-"+Date.now()+"."+ext;
+    const uploaded=await db.storage.from("foodfort-payment-proofs").upload(objectPath,proofFile,{contentType:proofFile.type,upsert:false});
+    if(uploaded.error){proofWarning=uploaded.error.message;}
+    else {const proofResult=await db.rpc("submit_foodfort_payment_proof",{p_order_number:String(result.order_number),p_customer_phone:phone,p_object_path:objectPath});if(proofResult.error)proofWarning=proofResult.error.message;else proofUploaded=true;}
+   }
    cart=[];appliedDiscountCode="";appliedDiscount=0;document.getElementById("discountCode").value="";drawCart();
    document.getElementById("customer").value="";
    document.getElementById("phone").value="";
    document.getElementById("table").value="";
    msg.style.color="#16834b";
    try{localStorage.setItem("foodfort_last_order",String(result.order_number));}catch(_){}
-   const selectedMethod=paymentMethods.find(m=>m.id===paymentMethodId);
-   const payNote=selectedMethod?.method_type==="cashier"?"تدفع عند الكاشير باستخدام رقم الطلب.":"طلبك بانتظار تحقق الإدارة من وصول التحويل.";
+   const selectedMethod=selectedPayment;
+   const payNote=selectedMethod?.method_type==="cashier"?"تدفع عند الكاشير باستخدام رقم الطلب.":(proofUploaded?"تم استلام القسيمة، والطلب بانتظار مراجعة الكاشير.":"طلبك بانتظار تحقق الإدارة من وصول التحويل.");
+   if(proofWarning)msg.dataset.proofWarning="تعذر تسجيل القسيمة: "+proofWarning;
    msg.innerHTML="✅ تم استلام طلبك! رقم الطلب: <b>"+result.order_number+"</b><br><b>"+htmlEsc(payNote)+"</b><br><a href='track-order.html' style='display:inline-block;margin-top:10px;background:#c90019;color:white;padding:10px 14px;border-radius:9px;text-decoration:none'>متابعة حالة الطلب</a>";
  }catch(err){
    console.error(err);
