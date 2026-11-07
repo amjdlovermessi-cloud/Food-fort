@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#142033"><title>معاينة المنيو | المورّد</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f9;color:#1d2735;font-family:Tahoma,Arial,sans-serif}header{padding:22px 16px;color:white;text-align:center;background:linear-gradient(130deg,#142033,#2b405d)}.logo{font-size:26px;font-weight:900}header p{margin:7px 0;color:#d0d9e6}.wrap{max-width:1050px;margin:auto;padding:16px}.bar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.bar a{color:#fff;background:#ffffff20;padding:9px 13px;border-radius:9px;text-decoration:none;font-size:13px}.meta{background:white;border:1px solid #e5e9ef;border-radius:14px;padding:14px;margin:14px 0;font-size:13px;line-height:1.8}.tabs{display:flex;gap:8px;overflow:auto;position:sticky;top:0;background:#f4f6f9;padding:8px 0;z-index:2}.tabs a{white-space:nowrap;background:#fff;color:#334155;padding:9px 13px;border-radius:20px;text-decoration:none;font-size:13px}.section{margin:22px 0}.section h2{color:var(--red);font-size:20px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.item{background:white;border:1px solid #e8ebf0;border-radius:14px;padding:14px}.item h3{margin:0 0 8px;font-size:15px}.price{color:var(--red);font-weight:900;font-size:17px}.muted{color:#77808e;font-size:12px;line-height:1.6}.size{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:7px;margin-top:7px;font-size:13px}.tag{display:inline-block;border-radius:30px;background:#fff4d8;color:#875b00;padding:4px 8px;font-size:10px;margin:0 0 7px}.hiddenItem{opacity:.65;border-style:dashed}@media(max-width:500px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.item{padding:10px}.item h3{font-size:13px}}
+</style></head><body>
+<header><div class="bar" style="max-width:1050px;margin:auto"><div style="text-align:right"><div class="logo" id="name">معاينة المنيو</div><p id="tagline"></p></div><a href="platform.html">العودة إلى لوحة المورّد</a></div></header>
+<main class="wrap"><div id="meta" class="meta">جارٍ تحميل بيانات المطعم...</div><nav id="tabs" class="tabs"></nav><div id="menu"></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
+<script>
+const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIH1D8h",{auth:{storageKey:"foodfort_platform_auth"}});
+const slug=new URLSearchParams(location.search).get("restaurant")||"food-fort";
+const money=n=>Number(n||0).toLocaleString("en-US");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+(async()=>{
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){document.getElementById("meta").textContent="سجّل الدخول أولاً من لوحة المورّد ثم افتح المعاينة.";return}
+ const {data:admin}=await db.from("platform_admins").select("user_id").eq("user_id",session.user.id).maybeSingle();
+ if(!admin){document.getElementById("meta").textContent="هذه المعاينة مخصصة للمورّد الرئيسي.";return}
+ const r=await db.from("restaurants").select("*").eq("slug",slug).maybeSingle();
+ if(r.error||!r.data){document.getElementById("meta").textContent="تعذر العثور على المطعم.";return}
+ const restaurant=r.data;document.getElementById("name").textContent=restaurant.restaurant_name;document.getElementById("tagline").textContent=restaurant.tagline||"";
+ document.title=restaurant.restaurant_name+" | معاينة المنيو";document.documentElement.style.setProperty("--red",restaurant.primary_color||"#c90019");
+ const subs=await db.from("restaurant_subscriptions").select("status,starts_at,ends_at,subscription_plans(plan_name)").eq("restaurant_id",restaurant.id).order("created_at",{ascending:false}).limit(1);
+ const sub=subs.data?.[0];document.getElementById("meta").innerHTML="<b>رابط المطعم:</b> "+esc(restaurant.slug)+"<br><b>حالة الحساب:</b> "+(restaurant.status==="active"?"نشط":"موقوف")+"<br><b>الاشتراك:</b> "+esc(sub?.subscription_plans?.plan_name||"لا يوجد")+" · "+esc(sub?.status||"غير مشترك")+"<br><span class='muted'>هذه معاينة للقراءة فقط. إدارة الأطباق والأسعار من حساب المطعم.</span>";
+ const [cats,prods]=await Promise.all([
+  db.from("menu_categories").select("id,name,sort_order,is_active").eq("restaurant_id",restaurant.id).order("sort_order"),
+  db.from("menu_products").select("id,category_id,name,description,price_iqd,size_options,is_available,sort_order").eq("restaurant_id",restaurant.id).order("sort_order")
+ ]);
+ if(cats.error||prods.error){document.getElementById("menu").textContent=(cats.error||prods.error).message;return}
+ const products=prods.data||[],categories=cats.data||[];
+ document.getElementById("tabs").innerHTML=categories.map((c,i)=>'<a href="#cat'+i+'">'+esc(c.name)+'</a>').join("");
+ document.getElementById("menu").innerHTML=categories.map((c,i)=>{
+  const list=products.filter(p=>p.category_id===c.id);
+  return '<section class="section" id="cat'+i+'"><h2>'+esc(c.name)+(c.is_active?"":' <span class="tag">تصنيف مخفي</span>')+'</h2><div class="grid">'+list.map(p=>'<article class="item '+(p.is_available?"":"hiddenItem")+'">'+(p.is_available?"":'<span class="tag">غير متاح للطلب</span>')+'<h3>'+esc(p.name)+'</h3>'+(p.description?'<p class="muted">'+esc(p.description)+'</p>':'')+(p.size_options?.length?p.size_options.map(z=>'<div class="size"><span>'+esc(z.name)+'</span><b>'+money(z.price_iqd)+' د.ع</b></div>').join(""):'<div class="price">'+money(p.price_iqd)+' د.ع</div>')+'</article>').join("")+'</div></section>';
+ }).join("")||'<div class="meta">هذا المطعم لا يحتوي على تصنيفات بعد.</div>';
+})();
+</script></body></html>
