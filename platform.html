@@ -84,6 +84,21 @@ button:disabled{opacity:.55;cursor:wait}
 </div><button class="green" id="memberBtn" onclick="inviteMember()">إضافة الحساب وإرسال الدعوة</button><span id="memberMsg" class="muted" style="margin-right:10px"></span>
 </div>
 <div class="panel">
+<h2>وسائل الدفع لكل مطعم</h2><p class="muted">أنت تضبط وسائل الدفع وحساباتها من لوحة المورّد. كل مطعم تظهر له وسائل الدفع التابعة له فقط.</p>
+<div class="field"><label>المطعم</label><select id="paymentRestaurant" onchange="loadPaymentMethods()"></select></div>
+<div class="grid">
+<div class="field"><label>اسم وسيلة الدفع</label><input id="methodName" placeholder="مثلاً: زين كاش"></div>
+<div class="field"><label>نوع الوسيلة</label><select id="methodType"><option value="cashier">الدفع عند الكاشير</option><option value="wallet">محفظة إلكترونية</option><option value="card">بطاقة</option><option value="bank_transfer">تحويل مصرفي</option><option value="qr">رمز QR</option><option value="other">أخرى</option></select></div>
+<div class="field"><label>اسم صاحب الحساب</label><input id="methodAccountName"></div>
+<div class="field"><label>رقم الحساب / الهاتف / IBAN</label><input id="methodDetails"></div>
+<div class="field"><label>رابط صورة QR (اختياري)</label><input id="methodQr" placeholder="https://..."></div>
+<div class="field"><label>تعليمات الدفع</label><input id="methodInstructions" placeholder="تعليمات تظهر للزبون"></div>
+</div>
+<div class="actions" style="margin:8px 0 14px"><label style="display:flex;align-items:center;gap:7px;margin:0"><input id="methodRequireProof" type="checkbox" style="width:auto"> يتطلب رفع قسيمة تحويل</label><label style="display:flex;align-items:center;gap:7px;margin:0"><input id="methodEnabled" type="checkbox" checked style="width:auto"> مفعّلة</label></div>
+<button class="green" onclick="addPaymentMethod()">إضافة وسيلة الدفع</button>
+<div id="paymentMethodsList" style="margin-top:14px"></div>
+</div>
+<div class="panel">
 <h2>إدارة أسعار الاشتراكات</h2><p class="muted">الأسعار بالدينار العراقي. السعر الذي تختاره هنا يُحفظ كقيمة الاشتراك وقت التفعيل.</p>
 <div class="grid">
 <div class="field"><label>سعر الاشتراك الشهري (د.ع)</label><input id="monthlyPrice" type="number" min="0"></div>
@@ -127,6 +142,7 @@ async function loadRestaurants(){
  identity.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");
  const memberSelect=document.getElementById("memberRestaurant");const memberPrevious=memberSelect.value;
  memberSelect.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");
+ const paymentSelect=document.getElementById("paymentRestaurant"),paymentPrevious=paymentSelect.value;paymentSelect.innerHTML=restaurants.map(r=>'<option value="'+r.id+'">'+esc(r.restaurant_name)+'</option>').join("");if(paymentPrevious&&restaurants.some(r=>r.id===paymentPrevious))paymentSelect.value=paymentPrevious;if(paymentSelect.value)await loadPaymentMethods();
  if(memberPrevious&&restaurants.some(r=>r.id===memberPrevious))memberSelect.value=memberPrevious;
  if(previous&&restaurants.some(r=>r.id===previous))identity.value=previous;
  if(identity.value)await loadIdentity();
@@ -145,6 +161,22 @@ async function loadRestaurants(){
  document.getElementById("statActive").textContent=active;document.getElementById("statExpired").textContent=expired;document.getElementById("statRevenue").textContent=money(revenue);
  document.getElementById("menuLinks").innerHTML=restaurants.map(r=>"<button class='secondary' onclick=\"openMenu('"+r.slug+"')\">"+esc(r.restaurant_name)+"</button>").join("")||"<span class='muted'>ستظهر هنا روابط المطاعم بعد إضافتها.</span>";
 }
+async function loadPaymentMethods(){
+ const id=document.getElementById("paymentRestaurant")?.value;if(!id)return;
+ const root=document.getElementById("paymentMethodsList");root.textContent="جارٍ تحميل وسائل الدفع...";
+ const {data,error}=await db.from("restaurant_payment_methods").select("id,method_name,method_type,account_name,account_details,instructions,qr_image_url,is_enabled,require_proof").eq("restaurant_id",id).order("sort_order");
+ if(error){root.textContent=error.message;return}
+ root.innerHTML=(data||[]).map(m=>'<div class="actions" style="justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee"><div><b>'+esc(m.method_name)+'</b><div class="muted">'+esc(m.method_type)+' · '+(m.is_enabled?'مفعّلة':'متوقفة')+' · '+(m.require_proof?'تتطلب قسيمة':'بدون قسيمة')+(m.account_details?' · '+esc(m.account_details):'')+'</div></div><div class="actions"><button class="secondary" onclick="togglePaymentMethod(\''+m.id+'\','+(!m.is_enabled)+')">'+(m.is_enabled?'إيقاف':'تفعيل')+'</button><button class="red" onclick="deletePaymentMethod(\''+m.id+'\')">حذف</button></div></div>').join("")||'<div class="muted">لا توجد وسائل دفع لهذا المطعم.</div>';
+}
+async function addPaymentMethod(){
+ const restaurant_id=document.getElementById("paymentRestaurant").value,method_name=document.getElementById("methodName").value.trim(),method_type=document.getElementById("methodType").value;
+ if(!restaurant_id||method_name.length<2){alert("اختر مطعماً واكتب اسم وسيلة الدفع");return}
+ const {error}=await db.from("restaurant_payment_methods").insert({restaurant_id,method_name,method_type,account_name:document.getElementById("methodAccountName").value.trim()||null,account_details:document.getElementById("methodDetails").value.trim()||null,qr_image_url:document.getElementById("methodQr").value.trim()||null,instructions:document.getElementById("methodInstructions").value.trim()||null,require_proof:document.getElementById("methodRequireProof").checked,is_enabled:document.getElementById("methodEnabled").checked,verification_mode:"manual",sort_order:20});
+ if(error){alert("تعذر إضافة وسيلة الدفع: "+error.message);return}
+ ["methodName","methodAccountName","methodDetails","methodQr","methodInstructions"].forEach(id=>document.getElementById(id).value="");document.getElementById("methodRequireProof").checked=false;await loadPaymentMethods();
+}
+async function togglePaymentMethod(id,enabled){const {error}=await db.from("restaurant_payment_methods").update({is_enabled:enabled}).eq("id",id);if(error){alert(error.message);return}await loadPaymentMethods()}
+async function deletePaymentMethod(id){if(!confirm("حذف وسيلة الدفع؟"))return;const {error}=await db.from("restaurant_payment_methods").delete().eq("id",id);if(error){alert(error.message);return}await loadPaymentMethods()}
 async function inviteMember(){
  const b=document.getElementById("memberBtn"),msg=document.getElementById("memberMsg");b.disabled=true;msg.textContent="جارٍ إضافة الحساب...";
  const {data,error}=await db.functions.invoke("invite-restaurant-member",{body:{restaurant_id:document.getElementById("memberRestaurant").value,email:document.getElementById("memberEmail").value.trim(),role:document.getElementById("memberRole").value}});
