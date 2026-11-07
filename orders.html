@@ -45,7 +45,7 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 <div><label>بيانات الحساب</label><input id="payAccountDetails" placeholder="رقم الحساب أو البطاقة"></div>
 <div><label>رابط QR (اختياري)</label><input id="payQr" placeholder="https://..."></div>
 <div><label>تعليمات الدفع</label><input id="payInstructions" placeholder="تعليمات للزبون"></div></div>
-<label><input type="checkbox" id="payEnabled" checked style="width:auto"> تفعيل للزبائن</label>
+<label><input type="checkbox" id="payEnabled" checked style="width:auto"> تفعيل للزبائن</label><br><label><input type="checkbox" id="payRequireProof" style="width:auto"> إلزام الزبون بإرفاق قسيمة تحويل</label>
 <button class="primary" onclick="addPaymentMethod()">إضافة وسيلة</button><p id="payMsg" class="muted"></p><div id="paymentMethodList"></div></section><div id="orders"></div>
 </section>
 </main>
@@ -109,7 +109,7 @@ async function addPaymentMethod(){
  const method_name=document.getElementById("payName").value.trim(),method_type=document.getElementById("payType").value;
  const msg=document.getElementById("payMsg");
  if(method_name.length<2){msg.textContent="اكتب اسم الوسيلة";return;}
- const payload={method_name,method_type,account_name:document.getElementById("payAccountName").value.trim()||null,account_details:document.getElementById("payAccountDetails").value.trim()||null,qr_image_url:document.getElementById("payQr").value.trim()||null,instructions:document.getElementById("payInstructions").value.trim()||null,is_enabled:document.getElementById("payEnabled").checked,sort_order:10};
+ const payload={method_name,method_type,account_name:document.getElementById("payAccountName").value.trim()||null,account_details:document.getElementById("payAccountDetails").value.trim()||null,qr_image_url:document.getElementById("payQr").value.trim()||null,instructions:document.getElementById("payInstructions").value.trim()||null,is_enabled:document.getElementById("payEnabled").checked,require_proof:document.getElementById("payRequireProof").checked,verification_mode:"manual",sort_order:10};
  const {error}=await db.from("restaurant_payment_methods").insert(payload);
  if(error){msg.textContent="تعذر الحفظ: "+error.message;return;}
  msg.textContent="تمت إضافة الوسيلة بنجاح";document.getElementById("payName").value="";
