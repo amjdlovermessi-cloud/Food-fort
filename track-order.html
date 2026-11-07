@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#c90019">
+<title>Food Fort | متابعة الطلب</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f5f5;color:#222;font-family:Tahoma,Arial,sans-serif}header{background:linear-gradient(135deg,#b90017,#ed1029);color:white;text-align:center;padding:24px 16px;border-radius:0 0 22px 22px}header h1{margin:0;font-size:30px}.wrap{max-width:650px;margin:22px auto;padding:0 14px}.panel{background:#fff;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 10px #0000000a}.field{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;font:inherit;margin:7px 0 14px}.btn{border:0;border-radius:10px;background:#c90019;color:white;padding:13px 18px;font:inherit;font-weight:bold;cursor:pointer}.btn:disabled{opacity:.6}.muted{color:#777;font-size:13px;line-height:1.8}.result{display:none}.status{display:inline-block;padding:9px 13px;border-radius:10px;background:#fff0d4;color:#8a5200;font-weight:bold;margin:8px 0}.step{display:flex;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid #eee}.dot{width:13px;height:13px;border-radius:50%;background:#ddd;flex:none}.step.done .dot{background:#16834b}.step.current .dot{background:#c90019;box-shadow:0 0 0 4px #c9001920}.items{line-height:2;border-top:1px solid #eee;padding-top:10px;margin-top:10px}.total{font-size:20px;font-weight:bold;color:#c90019}a{color:white;text-decoration:none;border:1px solid #ffffff80;border-radius:20px;padding:7px 13px;display:inline-block;margin-top:12px}
+</style></head>
+<body>
+<header><h1>🍴 Food Fort</h1><p>تابع حالة طلبك خطوة بخطوة</p><a href="index.html">العودة للمنيو</a></header>
+<main class="wrap">
+<section class="panel">
+<h2>🔎 ابحث عن طلبك</h2>
+<p class="muted">أدخل رقم الطلب الذي ظهر بعد الإرسال ورقم الهاتف المستخدم عند الطلب.</p>
+<label>رقم الطلب</label><input class="field" id="orderNumber" inputmode="numeric" placeholder="مثال: 1024">
+<label>رقم الهاتف</label><input class="field" id="phone" inputmode="tel" placeholder="07xxxxxxxxx">
+<button class="btn" id="searchBtn" onclick="trackOrder()">متابعة الطلب</button>
+<p id="msg" class="muted" aria-live="polite"></p>
+</section>
+<section class="panel result" id="result">
+<div class="muted" id="orderMeta"></div>
+<h2>حالة الطلب</h2><div id="statusText" class="status"></div>
+<div id="progress"></div>
+<div class="items" id="items"></div>
+<p class="total" id="total"></p>
+<p class="muted">يمكنك الرجوع لهذه الصفحة وإدخال نفس رقم الطلب والهاتف لمتابعة التحديثات.</p>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
+<script>
+const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h",{auth:{storageKey:"foodfort_customer_auth"}});
+const money=n=>Number(n||0).toLocaleString("en-US");
+const labels={new:"تم استلام الطلب",preparing:"طلبك قيد التحضير",ready:"طلبك جاهز",completed:"تم إكمال الطلب",cancelled:"تم إلغاء الطلب"};
+async function ensureSession(){const {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session){const x=await db.auth.signInAnonymously();if(x.error)throw x.error;}}
+async function trackOrder(){
+ const number=document.getElementById("orderNumber").value.trim(),phone=document.getElementById("phone").value.trim();
+ const msg=document.getElementById("msg"),btn=document.getElementById("searchBtn");
+ if(!/^\d{1,18}$/.test(number)||phone.replace(/\D/g,"").length<7){msg.textContent="تأكد من رقم الطلب ورقم الهاتف";msg.style.color="#c90019";return;}
+ btn.disabled=true;btn.textContent="جارٍ البحث...";
+ msg.textContent="";document.getElementById("result").style.display="none";
+ try{
+  await ensureSession();
+  const {data,error}=await db.rpc("track_foodfort_order",{p_order_number:number,p_customer_phone:phone});
+  if(error)throw error;
+  const o=data;
+  const orderStatus=labels[o.status]||o.status||"غير معروف";
+  document.getElementById("orderMeta").textContent="طلب رقم "+o.order_number+" · "+new Date(o.created_at).toLocaleString("ar-IQ");
+  document.getElementById("statusText").textContent=orderStatus;
+  const sequence=["new","preparing","ready","completed"];
+  const idx=sequence.indexOf(o.status);
+  document.getElementById("progress").innerHTML=o.status==="cancelled"?"<div class='step current'><span class='dot'></span><b>تم إلغاء الطلب</b></div>":sequence.map((s,i)=>"<div class='step "+(i<idx?"done":i===idx?"current":"")+""><span class='dot'></span><span>"+labels[s]+"</span></div>").join("");
+  document.getElementById("items").innerHTML="<b>تفاصيل طلبك</b><br>"+(o.items||[]).map(x=>x.product_name+" × "+x.quantity+" = "+money(x.line_total)+" د.ع").join("<br>")+"<br><span class='muted'>"+(o.order_type==="dine_in"?"صالة · الطاولة "+o.table_number:"سفري")+"</span>";
+  document.getElementById("total").textContent="المبلغ النهائي: "+money(o.total_iqd)+" د.ع";
+  document.getElementById("result").style.display="block";
+  msg.textContent="تم العثور على طلبك";msg.style.color="#16834b";
+ }catch(e){msg.textContent=e.message||"تعذر العثور على الطلب. تحقق من المعلومات وحاول مجدداً";msg.style.color="#c90019";}
+ finally{btn.disabled=false;btn.textContent="متابعة الطلب";}
+}
+try{const last=localStorage.getItem("foodfort_last_order");if(last)document.getElementById("orderNumber").value=last;}catch(_){}
+</script></body></html>
