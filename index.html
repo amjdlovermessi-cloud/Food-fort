@@ -36,7 +36,7 @@ function drawCart(){document.getElementById("cartitems").innerHTML=cart.length?c
 const htmlEsc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 async function loadPaymentMethods(){
  const select=document.getElementById("paymentMethod");
- const {data,error}=await db.from("restaurant_payment_methods").select("id,method_name,method_type,account_name,account_details,instructions,qr_image_url").eq("is_enabled",true).order("sort_order");
+ const {data,error}=await db.from("restaurant_payment_methods").select("id,method_name,method_type,account_name,account_details,instructions,qr_image_url,require_proof").eq("is_enabled",true).order("sort_order");
  if(error){select.innerHTML='<option value="">تعذر تحميل وسائل الدفع</option>';document.getElementById("paymentInstructions").textContent=error.message;return;}
  paymentMethods=data||[];
  select.innerHTML=paymentMethods.map(m=>'<option value="'+m.id+'">'+htmlEsc(m.method_name)+'</option>').join("")||'<option value="">لا توجد وسيلة دفع</option>';
