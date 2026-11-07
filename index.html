@@ -76,7 +76,8 @@ async function placeOrder(){
    document.getElementById("phone").value="";
    document.getElementById("table").value="";
    msg.style.color="#16834b";
-   try{localStorage.setItem("foodfort_last_order",String(result.order_number));}catch(_){}\n   msg.innerHTML="✅ تم إرسال طلبك بنجاح! رقم الطلب: <b>"+result.order_number+"</b><br><a href=\"track-order.html\" style=\"display:inline-block;margin-top:10px;background:#c90019;color:white;padding:10px 14px;border-radius:9px;text-decoration:none\">متابعة حالة الطلب</a>";
+   try{localStorage.setItem("foodfort_last_order",String(result.order_number));}catch(_){}
+   msg.innerHTML="✅ تم إرسال طلبك بنجاح! رقم الطلب: <b>"+result.order_number+"</b><br><a href=\"track-order.html\" style=\"display:inline-block;margin-top:10px;background:#c90019;color:white;padding:10px 14px;border-radius:9px;text-decoration:none\">متابعة حالة الطلب</a>";
  }catch(err){
    console.error(err);
    msg.style.color="#c90019";
