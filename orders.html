@@ -5,15 +5,15 @@
 <meta name="theme-color" content="#c90019"><title>Food Fort | لوحة الكاشير</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f4f4;font-family:Tahoma,Arial;color:#222}
-header{background:#c90019;color:white;padding:22px;text-align:center}main{max-width:900px;margin:auto;padding:16px}
+header{background:var(--red,#c90019);color:white;padding:22px;text-align:center}main{max-width:900px;margin:auto;padding:16px}
 .panel,.order{background:white;border-radius:14px;padding:16px;margin:14px 0;box-shadow:0 2px 8px #0001}
 input{width:100%;padding:12px;border:1px solid #ddd;border-radius:9px;margin:6px 0 12px;font:inherit}
 button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:white;text-decoration:none;font:inherit;cursor:pointer}
-.primary{background:#c90019}.green{background:#16834b}.orange{background:#b76b00}.muted{color:#777;font-size:13px}
+.primary{background:var(--red,#c90019)}.green{background:#16834b}.orange{background:#b76b00}.muted{color:#777;font-size:13px}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.order h3{margin:0 0 8px;color:#c90019}.items{padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;line-height:2}
+.order h3{margin:0 0 8px;color:var(--red,#c90019)}.items{padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;line-height:2}
 .total{font-weight:bold;font-size:18px}.status{padding:7px 10px;border-radius:8px;background:#fff0d4;display:inline-block;margin:8px 0}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.promoform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.promoform input,.promoform select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit}.promorow{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0;flex-wrap:wrap}.hidden{display:none!important}.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.stat-card{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:14px}.stat-card b{display:block;font-size:22px;color:#c90019;margin-top:7px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.promoform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.promoform input,.promoform select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit}.promorow{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0;flex-wrap:wrap}.hidden{display:none!important}.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.stat-card{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:14px}.stat-card b{display:block;font-size:22px;color:var(--red,#c90019);margin-top:7px}
 </style></head><body>
 <header><h1>Food Fort</h1><div>لوحة طلبات الكاشير</div></header>
 <main>
@@ -114,7 +114,7 @@ async function loadRestaurantProfile(){
  document.getElementById("profileAccent").value=data.accent_color||"#178447";
  document.getElementById("profilePhone").value=data.phone||"";
  document.getElementById("profileAddress").value=data.address||"";
- document.getElementById("profileLogo").value=data.logo_url||"";
+ document.getElementById("profileLogo").value=data.logo_url||"";\n document.documentElement.style.setProperty("--red",data.primary_color||"#c90019");
 }
 async function saveRestaurantProfile(){
  const payload={id:true,restaurant_name:document.getElementById("profileName").value.trim(),tagline:document.getElementById("profileTagline").value.trim(),primary_color:document.getElementById("profilePrimary").value,accent_color:document.getElementById("profileAccent").value,phone:document.getElementById("profilePhone").value.trim()||null,address:document.getElementById("profileAddress").value.trim()||null,logo_url:document.getElementById("profileLogo").value.trim()||null,updated_at:new Date().toISOString()};
