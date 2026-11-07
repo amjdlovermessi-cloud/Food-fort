@@ -39,7 +39,7 @@ button:disabled{opacity:.55;cursor:wait}
 <h2>دخول المورّد الرئيسي</h2><p class="muted">هذه اللوحة مخصصة لحساب مالك المنصة فقط.</p>
 <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" value="amjdlovermessi@gmail.com"></div>
 <div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div>
-<button id="loginBtn" onclick="login()">تسجيل الدخول</button><p id="loginMsg" class="muted"></p>
+<button id="loginBtn" type="button">تسجيل الدخول</button><p id="loginMsg" class="muted"></p>
 </section>
 <section id="app">
 <div class="stats">
@@ -126,7 +126,20 @@ const money=n=>Number(n||0).toLocaleString("en-US");
 const date=s=>s?new Date(s).toLocaleDateString("ar-IQ"):"-";
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function showLogin(msg=""){document.getElementById("login").style.display="block";document.getElementById("app").style.display="none";document.getElementById("loginMsg").textContent=msg}
-async function login(){const b=document.getElementById("loginBtn");b.disabled=true;const {data,error}=await db.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("password").value});b.disabled=false;if(error){showLogin("تعذر الدخول: "+error.message);return}await enter(data.user)}
+async function login(){
+ const b=document.getElementById("loginBtn"),msg=document.getElementById("loginMsg");
+ if(!db){showLogin("مكتبة الاتصال لم تُحمّل. حدّث الصفحة أو جرّب متصفحاً آخر.");return}
+ b.disabled=true;b.textContent="جارٍ التحقق...";msg.textContent="جارٍ الاتصال بخادم تسجيل الدخول...";msg.style.color="#27456e";
+ try{
+  const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+  if(!email||!password)throw new Error("اكتب البريد الإلكتروني وكلمة المرور.");
+  const result=await Promise.race([db.auth.signInWithPassword({email,password}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة الاتصال. تحقق من الإنترنت وحاول مجدداً.")),15000))]);
+  if(result.error)throw result.error;
+  if(!result.data?.user)throw new Error("لم يرجع خادم الدخول بيانات الحساب.");
+  msg.textContent="تم تسجيل الدخول، جارٍ التحقق من صلاحية المورّد...";
+  await enter(result.data.user);
+ }catch(e){showLogin("تعذر تسجيل الدخول: "+(e?.message||"خطأ غير معروف"));}finally{b.disabled=false;b.textContent="تسجيل الدخول";}
+}
 async function enter(user){
  const {data:admin,error}=await db.from("platform_admins").select("user_id").eq("user_id",user.id).maybeSingle();
  if(error||!admin){await db.auth.signOut();showLogin("هذا الحساب ليس حساب المورّد الرئيسي.");return}
@@ -228,5 +241,5 @@ async function openSubscription(id){
 async function toggleRestaurant(id,status){const next=status==="active"?"suspended":"active";if(!confirm(next==="suspended"?"إيقاف هذا المطعم؟":"إعادة تفعيل هذا المطعم؟"))return;const {error}=await db.from("restaurants").update({status:next}).eq("id",id);if(error){alert(error.message);return}await loadRestaurants()}
 function openMenu(slug){window.open("platform-preview.html?restaurant="+encodeURIComponent(slug),"_blank")}
 async function logout(){await db.auth.signOut();showLogin("تم تسجيل الخروج")}
-(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await enter(data.session.user);else showLogin()}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
+document.getElementById("loginBtn").addEventListener("click",login);\n(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await enter(data.session.user);else showLogin()}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
 </script></body></html>
