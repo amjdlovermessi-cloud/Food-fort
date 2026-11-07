@@ -29,7 +29,7 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 <section id="dashboard" class="hidden">
 <div class="bar"><h2>الطلبات الواردة</h2><div><a href="index.html">العودة للمنيو</a> <button onclick="loadOrders()">تحديث</button> <button onclick="logout()">خروج</button></div></div>
 <p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p>
-<section class="panel"><h2>🎟️ إدارة أكواد الخصم</h2><p class="muted">أنشئ كوداً بنسبة مئوية أو مبلغ ثابت، وحدد الحد الأدنى للطلب وعدد الاستخدامات وتاريخ الانتهاء عند الحاجة.</p>
+<section class="panel"><h2>🏷️ هوية المطعم</h2><div class="promoform"><div><label>اسم المطعم</label><input id="profileName" placeholder="اسم المطعم"></div><div><label>الشعار النصي</label><input id="profileTagline" placeholder="عبارة ترحيبية"></div><div><label>لون الهوية الأساسي</label><input id="profilePrimary" type="color" value="#c90019"></div><div><label>اللون الثانوي</label><input id="profileAccent" type="color" value="#178447"></div><div><label>رقم التواصل</label><input id="profilePhone" placeholder="رقم الهاتف"></div><div><label>العنوان</label><input id="profileAddress" placeholder="عنوان المطعم"></div><div><label>رابط الشعار (اختياري)</label><input id="profileLogo" placeholder="https://..."></div></div><button class="primary" onclick="saveRestaurantProfile()">حفظ هوية المطعم</button><p id="profileMsg" class="muted"></p></section><section class="panel"><h2>🎟️ إدارة أكواد الخصم</h2><p class="muted">أنشئ كوداً بنسبة مئوية أو مبلغ ثابت، وحدد الحد الأدنى للطلب وعدد الاستخدامات وتاريخ الانتهاء عند الحاجة.</p>
 <div class="promoform">
 <div><label>الكود</label><input id="promoCode" placeholder="مثال: FOOD10" maxlength="32"></div>
 <div><label>نوع الخصم</label><select id="promoType"><option value="percent">نسبة مئوية %</option><option value="fixed">مبلغ ثابت د.ع</option></select></div>
@@ -98,7 +98,24 @@ async function loadOrders(){
 }
 
 
-async function loadPaymentMethods(){
+async function loadRestaurantProfile(){
+ const {data,error}=await db.from("restaurant_profile").select("*").eq("id",true).maybeSingle();
+ if(error||!data)return;
+ document.getElementById("profileName").value=data.restaurant_name||"";
+ document.getElementById("profileTagline").value=data.tagline||"";
+ document.getElementById("profilePrimary").value=data.primary_color||"#c90019";
+ document.getElementById("profileAccent").value=data.accent_color||"#178447";
+ document.getElementById("profilePhone").value=data.phone||"";
+ document.getElementById("profileAddress").value=data.address||"";
+ document.getElementById("profileLogo").value=data.logo_url||"";
+}
+async function saveRestaurantProfile(){
+ const payload={id:true,restaurant_name:document.getElementById("profileName").value.trim(),tagline:document.getElementById("profileTagline").value.trim(),primary_color:document.getElementById("profilePrimary").value,accent_color:document.getElementById("profileAccent").value,phone:document.getElementById("profilePhone").value.trim()||null,address:document.getElementById("profileAddress").value.trim()||null,logo_url:document.getElementById("profileLogo").value.trim()||null,updated_at:new Date().toISOString()};
+ if(payload.restaurant_name.length<2){document.getElementById("profileMsg").textContent="اسم المطعم مطلوب";return;}
+ const {error}=await db.from("restaurant_profile").upsert(payload);
+ document.getElementById("profileMsg").textContent=error?"تعذر الحفظ: "+error.message:"تم حفظ هوية المطعم بنجاح";
+}
+\nasync function loadPaymentMethods(){
  const root=document.getElementById("paymentMethodList");
  const {data,error}=await db.from("restaurant_payment_methods").select("*").order("sort_order");
  if(error){root.textContent="تعذر تحميل الوسائل: "+error.message;return;}
