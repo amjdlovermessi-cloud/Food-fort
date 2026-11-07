@@ -38,7 +38,15 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 <div><label>عدد الاستخدامات (فارغ = مفتوح)</label><input id="promoLimit" type="number" min="1" placeholder="بدون حد"></div>
 <div><label>ينتهي بتاريخ</label><input id="promoExpiry" type="datetime-local"></div></div>
 <button class="primary" style="margin-top:10px" onclick="savePromo()">إنشاء كود الخصم</button>
-<p id="promoMsg" class="muted" aria-live="polite"></p><div id="promoList"></div></section><div id="orders"></div>
+<p id="promoMsg" class="muted" aria-live="polite"></p><div id="promoList"></div></section><section class="panel"><h2>💳 إعداد وسائل الدفع</h2><p class="muted">الوسائل المفعّلة تظهر للزبون. التحويلات تُؤكّد يدوياً من الكاشير بعد التحقق من وصول المبلغ.</p><div class="promoform">
+<div><label>اسم الوسيلة</label><input id="payName" placeholder="مثال: تحويل مصرفي"></div>
+<div><label>النوع</label><select id="payType"><option value="cashier">الدفع عند الكاشير</option><option value="card">بطاقة</option><option value="wallet">محفظة إلكترونية</option><option value="bank_transfer">تحويل مصرفي</option><option value="qr">QR</option><option value="other">أخرى</option></select></div>
+<div><label>اسم صاحب الحساب</label><input id="payAccountName" placeholder="اسم صاحب الحساب"></div>
+<div><label>بيانات الحساب</label><input id="payAccountDetails" placeholder="رقم الحساب أو البطاقة"></div>
+<div><label>رابط QR (اختياري)</label><input id="payQr" placeholder="https://..."></div>
+<div><label>تعليمات الدفع</label><input id="payInstructions" placeholder="تعليمات للزبون"></div></div>
+<label><input type="checkbox" id="payEnabled" checked style="width:auto"> تفعيل للزبائن</label>
+<button class="primary" onclick="addPaymentMethod()">إضافة وسيلة</button><p id="payMsg" class="muted"></p><div id="paymentMethodList"></div></section><div id="orders"></div>
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
@@ -71,13 +79,14 @@ async function enterDashboard(user){
  document.getElementById("dashboard").classList.remove("hidden");
  await loadOrders();
  await loadPromos();
+ await loadPaymentMethods();
  if(refreshTimer)clearInterval(refreshTimer);
  refreshTimer=setInterval(loadOrders,12000);
 }
 async function logout(){if(refreshTimer)clearInterval(refreshTimer);await db.auth.signOut();document.getElementById("dashboard").classList.add("hidden");document.getElementById("login").classList.remove("hidden")}
 async function loadOrders(){
  const root=document.getElementById("orders");root.innerHTML="<div class='order'>جارٍ تحميل الطلبات...</div>";
- const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
+ const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,payment_method_name,payment_status,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
  if(error){root.innerHTML="<div class='order'>تعذر تحميل الطلبات: "+esc(error.message)+"</div>";return}
  if(!data?.length){root.innerHTML="<div class='order'>لا توجد طلبات حتى الآن.</div>";return}
  root.innerHTML=data.map(o=>{
@@ -86,6 +95,35 @@ async function loadOrders(){
   const statusMap={new:"جديد",preparing:"قيد التحضير",ready:"جاهز",completed:"مكتمل",cancelled:"ملغي"};
   return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='muted'>المجموع قبل الخصم: "+Number(o.subtotal_iqd??o.total_iqd).toLocaleString("en-US")+" د.ع"+(o.discount_code?"<br>كود الخصم: <b>"+esc(o.discount_code)+"</b> | الخصم: "+Number(o.discount_amount||0).toLocaleString("en-US")+" د.ع":"")+"</p><p class='total'>المبلغ النهائي: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
  }).join("");
+}
+
+
+async function loadPaymentMethods(){
+ const root=document.getElementById("paymentMethodList");
+ const {data,error}=await db.from("restaurant_payment_methods").select("*").order("sort_order");
+ if(error){root.textContent="تعذر تحميل الوسائل: "+error.message;return;}
+ if(!data||!data.length){root.textContent="لا توجد وسائل دفع";return;}
+ root.innerHTML=data.map(m=>"<div class='promorow'><div><b>"+esc(m.method_name)+"</b> · "+esc(m.method_type)+"<div class='muted'>"+esc(m.account_name||"")+" "+esc(m.account_details||"")+"</div><span class='status'>"+(m.is_enabled?"مفعّلة":"متوقفة")+"</span></div><button class='"+(m.is_enabled?"orange":"green")+"' onclick=\"togglePaymentMethod('"+m.id+"',"+(!m.is_enabled)+")\">"+(m.is_enabled?"إيقاف":"تفعيل")+"</button></div>").join("");
+}
+async function addPaymentMethod(){
+ const method_name=document.getElementById("payName").value.trim(),method_type=document.getElementById("payType").value;
+ const msg=document.getElementById("payMsg");
+ if(method_name.length<2){msg.textContent="اكتب اسم الوسيلة";return;}
+ const payload={method_name,method_type,account_name:document.getElementById("payAccountName").value.trim()||null,account_details:document.getElementById("payAccountDetails").value.trim()||null,qr_image_url:document.getElementById("payQr").value.trim()||null,instructions:document.getElementById("payInstructions").value.trim()||null,is_enabled:document.getElementById("payEnabled").checked,sort_order:10};
+ const {error}=await db.from("restaurant_payment_methods").insert(payload);
+ if(error){msg.textContent="تعذر الحفظ: "+error.message;return;}
+ msg.textContent="تمت إضافة الوسيلة بنجاح";document.getElementById("payName").value="";
+ await loadPaymentMethods();
+}
+async function togglePaymentMethod(id,is_enabled){
+ const {error}=await db.from("restaurant_payment_methods").update({is_enabled}).eq("id",id);
+ if(error){alert("تعذر التحديث: "+error.message);return;}await loadPaymentMethods();
+}
+async function confirmPayment(id){
+ if(!confirm("هل تحققت فعلياً من وصول المبلغ؟"))return;
+ const {error}=await db.from("orders").update({payment_status:"paid"}).eq("id",id);
+ if(error){alert("تعذر تأكيد الدفع: "+error.message);return;}
+ await loadOrders();
 }
 
 async function loadPromos(){
