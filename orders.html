@@ -114,7 +114,8 @@ async function loadRestaurantProfile(){
  document.getElementById("profileAccent").value=data.accent_color||"#178447";
  document.getElementById("profilePhone").value=data.phone||"";
  document.getElementById("profileAddress").value=data.address||"";
- document.getElementById("profileLogo").value=data.logo_url||"";\n document.documentElement.style.setProperty("--red",data.primary_color||"#c90019");
+ document.getElementById("profileLogo").value=data.logo_url||"";
+ document.documentElement.style.setProperty("--red",data.primary_color||"#c90019");
 }
 async function saveRestaurantProfile(){
  const payload={id:true,restaurant_name:document.getElementById("profileName").value.trim(),tagline:document.getElementById("profileTagline").value.trim(),primary_color:document.getElementById("profilePrimary").value,accent_color:document.getElementById("profileAccent").value,phone:document.getElementById("profilePhone").value.trim()||null,address:document.getElementById("profileAddress").value.trim()||null,logo_url:document.getElementById("profileLogo").value.trim()||null,updated_at:new Date().toISOString()};
