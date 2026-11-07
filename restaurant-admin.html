@@ -67,7 +67,7 @@ const paymentStatus={awaiting_payment:"بانتظار الدفع",awaiting_verif
 function showLogin(msg=""){document.getElementById("login").style.display="block";document.getElementById("app").style.display="none";document.getElementById("loginMsg").textContent=msg}
 async function login(){const b=document.getElementById("loginBtn");b.disabled=true;const {data,error}=await db.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("password").value});b.disabled=false;if(error){showLogin("تعذر الدخول: "+error.message);return}await enter(data.user)}
 async function enter(user){
- const r=await db.from("restaurants").select("id,restaurant_name,status,primary_color,accent_color").eq("slug",restaurantSlug).maybeSingle();
+ const r=await db.from("restaurant_public").select("id,restaurant_name,status,primary_color,accent_color").eq("slug",restaurantSlug).maybeSingle();
  if(r.error||!r.data){await db.auth.signOut();showLogin("المطعم غير موجود أو اشتراكه غير فعال.");return}
  const m=await db.from("restaurant_members").select("role").eq("restaurant_id",r.data.id).eq("user_id",user.id).maybeSingle();
  if(m.error||!m.data){await db.auth.signOut();showLogin("هذا الحساب غير مرتبط بإدارة هذا المطعم.");return}
