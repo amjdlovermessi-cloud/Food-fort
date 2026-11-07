@@ -182,7 +182,7 @@ async function inviteMember(){
  const {data,error}=await db.functions.invoke("invite-restaurant-member",{body:{restaurant_id:document.getElementById("memberRestaurant").value,email:document.getElementById("memberEmail").value.trim(),role:document.getElementById("memberRole").value}});
  b.disabled=false;if(error){msg.textContent="تعذر الإضافة: "+error.message;return}
  if(data?.error){msg.textContent="تعذر الإضافة: "+data.error;return}
- msg.textContent=(data.invited?"تم إرسال الدعوة إلى ":"تم ربط الحساب الموجود: ")+data.email;
+ msg.textContent=(data.invited?"تم إرسال الدعوة إلى ":"تم ربط الحساب الموجود: ")+data.email+" · لوحة الإدارة: "+data.admin_url;
  document.getElementById("memberEmail").value="";await loadRestaurants();
 }
 async function loadIdentity(){
@@ -210,7 +210,7 @@ async function createRestaurant(){
  const {data,error}=await db.functions.invoke("create-restaurant",{body});b.disabled=false;
  if(error){msg.textContent="تعذر الإنشاء: "+error.message;return}
  if(data?.error){msg.textContent="تعذر الإنشاء: "+data.error;return}
- msg.textContent=(data.manager_invited?"تم إنشاء المطعم وإرسال دعوة إلى ":"تم إنشاء المطعم وربط الحساب الموجود: ")+data.manager_email+" · الرابط: "+data.menu_url;
+ msg.textContent=(data.manager_invited?"تم إنشاء المطعم وإرسال دعوة إلى ":"تم إنشاء المطعم وربط الحساب الموجود: ")+data.manager_email+" · رابط المنيو: "+data.menu_url+" · لوحة الإدارة: "+data.admin_url;
  ["newName","newSlug","managerEmail","newTagline","newLogo"].forEach(id=>document.getElementById(id).value="");await loadRestaurants();
 }
 async function openSubscription(id){
