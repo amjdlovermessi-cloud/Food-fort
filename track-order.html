@@ -53,7 +53,7 @@ async function trackOrder(){
   document.getElementById("statusText").textContent=orderStatus+" · "+(paymentLabels[o.payment_status]||"حالة الدفع غير محددة");
   const sequence=["new","preparing","ready","completed"];
   const idx=sequence.indexOf(o.status);
-  document.getElementById("progress").innerHTML=o.status==="cancelled"?"<div class='step current'><span class='dot'></span><b>تم إلغاء الطلب</b></div>":sequence.map((s,i)=>"<div class='step "+(i<idx?"done":i===idx?"current":"")+""><span class='dot'></span><span>"+labels[s]+"</span></div>").join("");
+  document.getElementById("progress").innerHTML=o.status==="cancelled"?"<div class='step current'><span class='dot'></span><b>تم إلغاء الطلب</b></div>":sequence.map((s,i)=>"<div class='step "+(i<idx?"done":i===idx?"current":"")+"'><span class='dot'></span><span>"+labels[s]+"</span></div>").join("");
   document.getElementById("items").innerHTML="<b>تفاصيل طلبك</b><br>"+(o.items||[]).map(x=>x.product_name+" × "+x.quantity+" = "+money(x.line_total)+" د.ع").join("<br>")+"<br><span class='muted'>"+(o.order_type==="dine_in"?"صالة · الطاولة "+o.table_number:"سفري")+"</span>";
   document.getElementById("total").textContent="المبلغ النهائي: "+money(o.total_iqd)+" د.ع";
   document.getElementById("result").style.display="block";
