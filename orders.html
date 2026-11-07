@@ -13,7 +13,7 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .order h3{margin:0 0 8px;color:#c90019}.items{padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;line-height:2}
 .total{font-weight:bold;font-size:18px}.status{padding:7px 10px;border-radius:8px;background:#fff0d4;display:inline-block;margin:8px 0}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.promoform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.promoform input,.promoform select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit}.promorow{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0;flex-wrap:wrap}.hidden{display:none!important}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.promoform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.promoform input,.promoform select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit}.promorow{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0;flex-wrap:wrap}.hidden{display:none!important}.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.stat-card{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:14px}.stat-card b{display:block;font-size:22px;color:#c90019;margin-top:7px}
 </style></head><body>
 <header><h1>Food Fort</h1><div>لوحة طلبات الكاشير</div></header>
 <main>
@@ -28,7 +28,7 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 </section>
 <section id="dashboard" class="hidden">
 <div class="bar"><h2>الطلبات الواردة</h2><div><a href="index.html">العودة للمنيو</a> <button onclick="loadOrders()">تحديث</button> <button onclick="logout()">خروج</button></div></div>
-<p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p>
+<p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p><section class="panel"><h3>📊 ملخص الأداء</h3><div id="dashboardStats" class="stats-grid"><div class="stat-card">جارٍ تحميل الإحصائيات...</div></div></section>
 <section class="panel"><h2>🏷️ هوية المطعم</h2><div class="promoform"><div><label>اسم المطعم</label><input id="profileName" placeholder="اسم المطعم"></div><div><label>الشعار النصي</label><input id="profileTagline" placeholder="عبارة ترحيبية"></div><div><label>لون الهوية الأساسي</label><input id="profilePrimary" type="color" value="#c90019"></div><div><label>اللون الثانوي</label><input id="profileAccent" type="color" value="#178447"></div><div><label>رقم التواصل</label><input id="profilePhone" placeholder="رقم الهاتف"></div><div><label>العنوان</label><input id="profileAddress" placeholder="عنوان المطعم"></div><div><label>رابط الشعار (اختياري)</label><input id="profileLogo" placeholder="https://..."></div></div><button class="primary" onclick="saveRestaurantProfile()">حفظ هوية المطعم</button><p id="profileMsg" class="muted"></p></section><section class="panel"><h2>🎟️ إدارة أكواد الخصم</h2><p class="muted">أنشئ كوداً بنسبة مئوية أو مبلغ ثابت، وحدد الحد الأدنى للطلب وعدد الاستخدامات وتاريخ الانتهاء عند الحاجة.</p>
 <div class="promoform">
 <div><label>الكود</label><input id="promoCode" placeholder="مثال: FOOD10" maxlength="32"></div>
@@ -89,6 +89,12 @@ async function loadOrders(){
  const root=document.getElementById("orders");root.innerHTML="<div class='order'>جارٍ تحميل الطلبات...</div>";
  const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,payment_method_name,payment_status,payment_proof_url,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
  if(error){root.innerHTML="<div class='order'>تعذر تحميل الطلبات: "+esc(error.message)+"</div>";return}
+ const todayKey=new Date().toLocaleDateString("en-CA");
+ const todayOrders=data.filter(o=>new Date(o.created_at).toLocaleDateString("en-CA")===todayKey).length;
+ const paidRevenue=data.filter(o=>o.payment_status==="paid").reduce((s,o)=>s+Number(o.total_iqd||0),0);
+ const pendingPayments=data.filter(o=>o.payment_status!=="paid").length;
+ const preparing=data.filter(o=>o.status==="preparing").length;
+ document.getElementById("dashboardStats").innerHTML="<div class='stat-card'>إجمالي الطلبات<b>"+data.length+"</b></div><div class='stat-card'>طلبات اليوم<b>"+todayOrders+"</b></div><div class='stat-card'>المبيعات المؤكدة<b>"+paidRevenue.toLocaleString("en-US")+" د.ع</b></div><div class='stat-card'>بانتظار الدفع<b>"+pendingPayments+"</b></div><div class='stat-card'>قيد التحضير<b>"+preparing+"</b></div>";
  if(!data?.length){root.innerHTML="<div class='order'>لا توجد طلبات حتى الآن.</div>";return}
  root.innerHTML=data.map(o=>{
   const items=(o.order_items||[]).map(x=>esc(x.product_name)+" × "+x.quantity+" = "+Number(x.line_total).toLocaleString("en-US")+" د.ع").join("<br>");
