@@ -115,7 +115,8 @@ async function saveRestaurantProfile(){
  const {error}=await db.from("restaurant_profile").upsert(payload);
  document.getElementById("profileMsg").textContent=error?"تعذر الحفظ: "+error.message:"تم حفظ هوية المطعم بنجاح";
 }
-\nasync function loadPaymentMethods(){
+
+async function loadPaymentMethods(){
  const root=document.getElementById("paymentMethodList");
  const {data,error}=await db.from("restaurant_payment_methods").select("*").order("sort_order");
  if(error){root.textContent="تعذر تحميل الوسائل: "+error.message;return;}
