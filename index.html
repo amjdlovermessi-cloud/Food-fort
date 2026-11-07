@@ -9,7 +9,11 @@
 <header><div class="logo">🍴 Food Fort</div><p>اختار وجبتك وخلي الباقي علينا</p><div class="toplinks"><a href="#menu">المنيو</a><a href="orders.html">صفحة الكاشير</a></div></header>
 <main class="wrap"><div class="notice">جميع الأسعار بالدينار العراقي. اختار وجباتك وأضفها للسلة، ثم حدد صالة أو سفري.</div><nav class="tabs" id="tabs"></nav><div id="menu"></div>
 <section class="cartbox" id="cart"><h2 class="section-title">🛒 سلة الطلبات</h2><div id="cartitems">السلة فارغة حالياً</div><h3>المجموع: <span id="total">0</span> د.ع</h3><h3>طريقة الاستلام</h3><div class="choice"><label><input type="radio" name="service" value="صالة" checked onchange="toggleTable()"> صالة</label><label><input type="radio" name="service" value="سفري" onchange="toggleTable()"> سفري</label></div><div id="tablewrap"><label>رقم الطاولة</label><select class="field" id="table"><option value="">اختر رقم الطاولة</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></div><label>اسم الزبون</label><input class="field" id="customer" placeholder="الاسم"><label>رقم الهاتف</label><input class="field" id="phone" inputmode="tel" placeholder="07xxxxxxxxx"><button class="submit" onclick="placeOrder()">إرسال الطلب للكاشير</button><p id="msg" aria-live="polite"></p></section></main><footer>Food Fort © المنيو الإلكتروني</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
 <script>
+const SUPABASE_URL="https://gghlmpxmiivrkiltydxf.supabase.co";
+const SUPABASE_KEY="sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const groups=[
 {name:"البركر",items:[["دبل بركر",8000],["سوبريم",6500],["تكساس",7500],["مشروم",6500],["كلاسك",6000],["هالابينو",6500],["كرانتشي",7000],["بركر",4000],["دواوين",6500],["شيز بركر",6500],["دجاج",6500]]},
 {name:"البيتزا",items:[["بيتزا شاورما مشكل",[18000,14250,11000,7000]],["بيتزا شاورما دجاج",[17000,13250,10250,7000]],["بيتزا فاهيتا",[15250,12000,10250,7000]],["بيتزا دوني",[17000,14250,11000,7000]],["بيتزا شاورما لحم",[19250,15250,12000,7000]],["بيتزا ببروني",[17000,15250,12000,7000]],["بيتزا تكس مكس",[15250,12000,10250,7000]],["بيتزا ستيك لحم",[17000,15250,12000,7000]],["بيتزا مارغريتا",[12000,10250,8000,6500]],["بيتزا خضار",[13250,11000,9000,6500]],["بيتزا مناقيش",[12000,10250,8000,6500]]],sizes:["عائلي","كبير","وسط","صغير"]},
@@ -30,6 +34,49 @@ function add(name,price){let x=cart.find(x=>x.name===name);if(x)x.qty++;else car
 function drawCart(){document.getElementById("cartitems").innerHTML=cart.length?cart.map((x,i)=>'<div class="cartline"><div><b>'+x.name+'</b><br><small>'+money(x.price*x.qty)+' د.ع</small></div><div class="qty"><button onclick="change('+i+',-1)">−</button> '+x.qty+' <button onclick="change('+i+',1)">+</button></div></div>').join(""):"السلة فارغة حالياً";document.getElementById("total").textContent=money(cart.reduce((s,x)=>s+x.price*x.qty,0))}
 function change(i,n){cart[i].qty+=n;if(cart[i].qty<=0)cart.splice(i,1);drawCart()}
 function toggleTable(){document.getElementById("tablewrap").style.display=document.querySelector('[name=service]:checked').value==="صالة"?"block":"none"}
-function placeOrder(){if(!cart.length)return alert("أضف وجبة واحدة على الأقل");let service=document.querySelector('[name=service]:checked').value,table=document.getElementById("table").value;if(service==="صالة"&&!table)return alert("حدد رقم الطاولة");let name=document.getElementById("customer").value.trim(),phone=document.getElementById("phone").value.trim();if(!name||!phone)return alert("اكتب اسمك ورقم هاتفك");let order={id:"FF-"+Date.now().toString().slice(-6),name:name,phone:phone,service:service,table:service==="صالة"?table:"-",items:cart,total:cart.reduce((s,x)=>s+x.price*x.qty,0),time:new Date().toLocaleString("ar-IQ"),status:"جديد"};let orders=JSON.parse(localStorage.getItem("foodfort-orders")||"[]");orders.unshift(order);localStorage.setItem("foodfort-orders",JSON.stringify(orders));cart=[];drawCart();document.getElementById("msg").textContent="تم تسجيل الطلب تجريبياً. رقم الطلب: "+order.id+" (الطلبات حالياً محفوظة على نفس الجهاز فقط)";document.getElementById("customer").value="";document.getElementById("phone").value=""}
+let sending=false;
+async function placeOrder(){
+ if(sending)return;
+ if(!cart.length){alert("أضف وجبة واحدة على الأقل");return}
+ const service=document.querySelector('[name=service]:checked').value;
+ const table=document.getElementById("table").value;
+ if(service==="صالة"&&!table){alert("حدد رقم الطاولة");return}
+ const name=document.getElementById("customer").value.trim();
+ const phone=document.getElementById("phone").value.trim();
+ if(!name||!phone){alert("اكتب اسمك ورقم هاتفك");return}
+ const btn=document.querySelector(".submit"),msg=document.getElementById("msg");
+ sending=true;btn.disabled=true;btn.textContent="جارٍ إرسال الطلب...";
+ msg.textContent="";
+ try{
+   let {data:{session},error:sessionError}=await db.auth.getSession();
+   if(sessionError)throw sessionError;
+   if(!session){
+     const signed=await db.auth.signInAnonymously();
+     if(signed.error)throw signed.error;
+   }
+   const payload=cart.map(x=>({name:x.name,price:x.price,qty:x.qty}));
+   const {data,error}=await db.rpc("create_foodfort_order",{
+     p_customer_name:name,
+     p_customer_phone:phone,
+     p_order_type:service==="صالة"?"dine_in":"takeaway",
+     p_table_number:service==="صالة"?Number(table):null,
+     p_items:payload
+   });
+   if(error)throw error;
+   const result=Array.isArray(data)?data[0]:data;
+   cart=[];drawCart();
+   document.getElementById("customer").value="";
+   document.getElementById("phone").value="";
+   document.getElementById("table").value="";
+   msg.style.color="#16834b";
+   msg.textContent="✅ تم إرسال طلبك بنجاح! رقم الطلب: "+result.order_number;
+ }catch(err){
+   console.error(err);
+   msg.style.color="#c90019";
+   msg.textContent="تعذر إرسال الطلب: "+(err.message||"تحقق من الاتصال وحاول مجدداً");
+ }finally{
+   sending=false;btn.disabled=false;btn.textContent="إرسال الطلب للكاشير";
+ }
+}
 render();drawCart();toggleTable();
 </script></body></html>
