@@ -29,7 +29,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
 <script>
 const db=window.supabase.createClient("https://gghlmpxmiivrkiltydxf.supabase.co","sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h",{auth:{storageKey:"foodfort_customer_auth"}});
-const money=n=>Number(n||0).toLocaleString("en-US");\n(async()=>{const {data}=await db.from("restaurant_profile").select("restaurant_name,tagline,primary_color").eq("id",true).maybeSingle();if(data){document.getElementById("restaurantName").textContent="🍴 "+data.restaurant_name;document.title=data.restaurant_name+" | متابعة الطلب";document.documentElement.style.setProperty("--red",data.primary_color);}})();
+const money=n=>Number(n||0).toLocaleString("en-US");
+(async()=>{const {data}=await db.from("restaurant_profile").select("restaurant_name,tagline,primary_color").eq("id",true).maybeSingle();if(data){document.getElementById("restaurantName").textContent="🍴 "+data.restaurant_name;document.title=data.restaurant_name+" | متابعة الطلب";document.documentElement.style.setProperty("--red",data.primary_color);}})();
 const labels={new:"تم استلام الطلب",preparing:"طلبك قيد التحضير",ready:"طلبك جاهز",completed:"تم إكمال الطلب",cancelled:"تم إلغاء الطلب"};
 async function ensureSession(){const {data:{session},error}=await db.auth.getSession();if(error)throw error;
  if(session&&!session.user?.is_anonymous)await db.auth.signOut();
@@ -46,7 +47,8 @@ async function trackOrder(){
   const {data,error}=await db.rpc("track_foodfort_order",{p_order_number:number,p_customer_phone:phone});
   if(error)throw error;
   const o=Array.isArray(data)?data[0]:data;if(!o||typeof o!=="object")throw new Error("لم تصل بيانات الطلب بشكل صحيح");
-  const orderStatus=labels[o.status]||o.status||"غير معروف";\n  const paymentLabels={awaiting_payment:"بانتظار الدفع عند الكاشير",awaiting_verification:"بانتظار التحقق من التحويل",paid:"تم تأكيد الدفع",failed:"تعذر الدفع",refunded:"تم إرجاع المبلغ",expired:"انتهت مهلة الدفع"};
+  const orderStatus=labels[o.status]||o.status||"غير معروف";
+  const paymentLabels={awaiting_payment:"بانتظار الدفع عند الكاشير",awaiting_verification:"بانتظار التحقق من التحويل",paid:"تم تأكيد الدفع",failed:"تعذر الدفع",refunded:"تم إرجاع المبلغ",expired:"انتهت مهلة الدفع"};
   document.getElementById("orderMeta").textContent="طلب رقم "+o.order_number+" · "+new Date(o.created_at).toLocaleString("ar-IQ");
   document.getElementById("statusText").textContent=orderStatus+" · "+(paymentLabels[o.payment_status]||"حالة الدفع غير محددة");
   const sequence=["new","preparing","ready","completed"];
