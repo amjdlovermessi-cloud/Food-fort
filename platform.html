@@ -56,7 +56,7 @@ button:disabled{opacity:.55;cursor:wait}
 <div class="field"><label>بريد مدير المطعم</label><input id="managerEmail" type="email" placeholder="manager@example.com"></div>
 <div class="field"><label>الشعار النصي</label><input id="newTagline" placeholder="أهلاً بكم"></div>
 <div class="field"><label>لون الهوية الرئيسي</label><input id="newPrimary" type="color" value="#c90019"></div>
-<div class="field"><label>اللون الثانوي</label><input id="newAccent" type="color" value="#178447"></div>
+<div class="field"><label>اللون الثانوي</label><input id="newAccent" type="color" value="#178447"></div><div class="field"><label>الثيم</label><select id="newTheme"><option value="classic">كلاسيكي</option><option value="dark">داكن</option><option value="warm">دافئ</option><option value="minimal">بسيط</option></select></div>
 <div class="field" style="grid-column:1/-1"><label>رابط صورة الشعار (اختياري)</label><input id="newLogo" placeholder="https://..."></div>
 </div>
 <div class="actions"><button id="createBtn" class="green" onclick="createRestaurant()">إنشاء المطعم وإرسال الدعوة</button></div>
@@ -69,7 +69,7 @@ button:disabled{opacity:.55;cursor:wait}
 <div class="field"><label>اسم المطعم</label><input id="identityName"></div>
 <div class="field"><label>الشعار النصي</label><input id="identityTagline"></div>
 <div class="field"><label>لون الهوية الرئيسي</label><input id="identityPrimary" type="color" value="#c90019"></div>
-<div class="field"><label>اللون الثانوي</label><input id="identityAccent" type="color" value="#178447"></div>
+<div class="field"><label>اللون الثانوي</label><input id="identityAccent" type="color" value="#178447"></div><div class="field"><label>الثيم</label><select id="identityTheme"><option value="classic">كلاسيكي</option><option value="dark">داكن</option><option value="warm">دافئ</option><option value="minimal">بسيط</option></select></div>
 <div class="field"><label>رابط الشعار</label><input id="identityLogo" placeholder="https://..."></div>
 <div class="field"><label>رقم التواصل</label><input id="identityPhone" placeholder="رقم الهاتف"></div>
 <div class="field" style="grid-column:1/-1"><label>العنوان</label><input id="identityAddress"></div>
@@ -135,7 +135,7 @@ async function loadAll(){await Promise.all([loadPlans(),loadRestaurants()])}
 async function loadPlans(){const {data,error}=await db.from("subscription_plans").select("*").order("duration_days");if(error){alert(error.message);return}plans=data||[];const m=plans.find(x=>x.plan_code==="monthly"),a=plans.find(x=>x.plan_code==="annual");document.getElementById("monthlyPrice").value=m?.price_iqd??0;document.getElementById("annualPrice").value=a?.price_iqd??0}
 async function savePlanPrices(){for(const p of plans){const value=Number(document.getElementById(p.plan_code==="monthly"?"monthlyPrice":"annualPrice").value);if(!Number.isInteger(value)||value<0){alert("أدخل سعراً صحيحاً");return}const {error}=await db.from("subscription_plans").update({price_iqd:value}).eq("id",p.id);if(error){alert(error.message);return}}document.getElementById("planMsg").textContent="تم حفظ الأسعار";await loadPlans()}
 async function loadRestaurants(){
- const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,owner_email,created_at,tagline,logo_url,primary_color,accent_color,phone,address,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
+ const {data,error}=await db.from("restaurants").select("id,slug,restaurant_name,status,owner_user_id,owner_email,created_at,tagline,logo_url,primary_color,accent_color,theme_key,phone,address,restaurant_subscriptions(id,status,starts_at,ends_at,price_iqd,subscription_plans(plan_name,plan_code))").order("created_at",{ascending:false});
  if(error){document.getElementById("restaurantsBody").innerHTML="<tr><td colspan='7'>"+esc(error.message)+"</td></tr>";return}
  restaurants=data||[];
  const identity=document.getElementById("identityRestaurant"),previous=identity.value;
@@ -191,14 +191,14 @@ async function loadIdentity(){
  document.getElementById("identityName").value=r.restaurant_name||"";
  document.getElementById("identityTagline").value=r.tagline||"";
  document.getElementById("identityPrimary").value=r.primary_color||"#c90019";
- document.getElementById("identityAccent").value=r.accent_color||"#178447";
+ document.getElementById("identityAccent").value=r.accent_color||"#178447";document.getElementById("identityTheme").value=r.theme_key||"classic";
  document.getElementById("identityLogo").value=r.logo_url||"";
  document.getElementById("identityPhone").value=r.phone||"";
  document.getElementById("identityAddress").value=r.address||"";
 }
 async function saveIdentity(){
  const id=document.getElementById("identityRestaurant").value;if(!id)return;
- const payload={restaurant_name:document.getElementById("identityName").value.trim(),tagline:document.getElementById("identityTagline").value.trim(),primary_color:document.getElementById("identityPrimary").value,accent_color:document.getElementById("identityAccent").value,logo_url:document.getElementById("identityLogo").value.trim()||null,phone:document.getElementById("identityPhone").value.trim()||null,address:document.getElementById("identityAddress").value.trim()||null,updated_at:new Date().toISOString()};
+ const payload={restaurant_name:document.getElementById("identityName").value.trim(),tagline:document.getElementById("identityTagline").value.trim(),primary_color:document.getElementById("identityPrimary").value,accent_color:document.getElementById("identityAccent").value,theme_key:document.getElementById("identityTheme").value,logo_url:document.getElementById("identityLogo").value.trim()||null,phone:document.getElementById("identityPhone").value.trim()||null,address:document.getElementById("identityAddress").value.trim()||null,updated_at:new Date().toISOString()};
  if(payload.restaurant_name.length<2){alert("اسم المطعم قصير جداً");return}
  const {error}=await db.from("restaurants").update(payload).eq("id",id);
  if(error){alert("تعذر حفظ الهوية: "+error.message);return}
@@ -206,7 +206,7 @@ async function saveIdentity(){
 }
 async function createRestaurant(){
  const b=document.getElementById("createBtn"),msg=document.getElementById("createMsg");b.disabled=true;msg.textContent="جارٍ إنشاء المطعم وإرسال الدعوة...";
- const body={restaurant_name:document.getElementById("newName").value.trim(),slug:document.getElementById("newSlug").value.trim().toLowerCase(),manager_email:document.getElementById("managerEmail").value.trim(),tagline:document.getElementById("newTagline").value.trim(),logo_url:document.getElementById("newLogo").value.trim(),primary_color:document.getElementById("newPrimary").value,accent_color:document.getElementById("newAccent").value};
+ const body={restaurant_name:document.getElementById("newName").value.trim(),slug:document.getElementById("newSlug").value.trim().toLowerCase(),manager_email:document.getElementById("managerEmail").value.trim(),tagline:document.getElementById("newTagline").value.trim(),logo_url:document.getElementById("newLogo").value.trim(),primary_color:document.getElementById("newPrimary").value,accent_color:document.getElementById("newAccent").value,theme_key:document.getElementById("newTheme").value};
  const {data,error}=await db.functions.invoke("create-restaurant",{body});b.disabled=false;
  if(error){msg.textContent="تعذر الإنشاء: "+error.message;return}
  if(data?.error){msg.textContent="تعذر الإنشاء: "+data.error;return}
