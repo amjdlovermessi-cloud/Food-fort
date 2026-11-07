@@ -13,7 +13,7 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .order h3{margin:0 0 8px;color:#c90019}.items{padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;line-height:2}
 .total{font-weight:bold;font-size:18px}.status{padding:7px 10px;border-radius:8px;background:#fff0d4;display:inline-block;margin:8px 0}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.promoform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.promoform input,.promoform select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit}.promorow{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0;flex-wrap:wrap}.hidden{display:none!important}
 </style></head><body>
 <header><h1>Food Fort</h1><div>لوحة طلبات الكاشير</div></header>
 <main>
@@ -28,7 +28,17 @@ button,a{border:0;border-radius:9px;padding:10px 14px;background:#222;color:whit
 </section>
 <section id="dashboard" class="hidden">
 <div class="bar"><h2>الطلبات الواردة</h2><div><a href="index.html">العودة للمنيو</a> <button onclick="loadOrders()">تحديث</button> <button onclick="logout()">خروج</button></div></div>
-<p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p><div id="orders"></div>
+<p class="muted">تتحدث القائمة تلقائياً كل 12 ثانية.</p>
+<section class="panel"><h2>🎟️ إدارة أكواد الخصم</h2><p class="muted">أنشئ كوداً بنسبة مئوية أو مبلغ ثابت، وحدد الحد الأدنى للطلب وعدد الاستخدامات وتاريخ الانتهاء عند الحاجة.</p>
+<div class="promoform">
+<div><label>الكود</label><input id="promoCode" placeholder="مثال: FOOD10" maxlength="32"></div>
+<div><label>نوع الخصم</label><select id="promoType"><option value="percent">نسبة مئوية %</option><option value="fixed">مبلغ ثابت د.ع</option></select></div>
+<div><label>قيمة الخصم</label><input id="promoValue" type="number" min="1" placeholder="10"></div>
+<div><label>أقل مبلغ للطلب (د.ع)</label><input id="promoMin" type="number" min="0" value="0"></div>
+<div><label>عدد الاستخدامات (فارغ = مفتوح)</label><input id="promoLimit" type="number" min="1" placeholder="بدون حد"></div>
+<div><label>ينتهي بتاريخ</label><input id="promoExpiry" type="datetime-local"></div></div>
+<button class="primary" style="margin-top:10px" onclick="savePromo()">إنشاء كود الخصم</button>
+<p id="promoMsg" class="muted" aria-live="polite"></p><div id="promoList"></div></section><div id="orders"></div>
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
@@ -60,21 +70,62 @@ async function enterDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
  await loadOrders();
+ await loadPromos();
  if(refreshTimer)clearInterval(refreshTimer);
  refreshTimer=setInterval(loadOrders,12000);
 }
 async function logout(){if(refreshTimer)clearInterval(refreshTimer);await db.auth.signOut();document.getElementById("dashboard").classList.add("hidden");document.getElementById("login").classList.remove("hidden")}
 async function loadOrders(){
  const root=document.getElementById("orders");root.innerHTML="<div class='order'>جارٍ تحميل الطلبات...</div>";
- const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,total_iqd,status,created_at,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
+ const {data,error}=await db.from("orders").select("id,order_number,customer_name,customer_phone,order_type,table_number,subtotal_iqd,discount_code,discount_amount,total_iqd,status,created_at,order_items(product_name,unit_price,quantity,line_total)").order("created_at",{ascending:false});
  if(error){root.innerHTML="<div class='order'>تعذر تحميل الطلبات: "+esc(error.message)+"</div>";return}
  if(!data?.length){root.innerHTML="<div class='order'>لا توجد طلبات حتى الآن.</div>";return}
  root.innerHTML=data.map(o=>{
   const items=(o.order_items||[]).map(x=>esc(x.product_name)+" × "+x.quantity+" = "+Number(x.line_total).toLocaleString("en-US")+" د.ع").join("<br>");
   const type=o.order_type==="dine_in"?"صالة":"سفري";
   const statusMap={new:"جديد",preparing:"قيد التحضير",ready:"جاهز",completed:"مكتمل",cancelled:"ملغي"};
-  return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='total'>المجموع: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
+  return "<article class='order'><h3>طلب رقم "+esc(o.order_number)+"</h3><div class='muted'>"+new Date(o.created_at).toLocaleString("ar-IQ")+"</div><p><b>الزبون:</b> "+esc(o.customer_name)+" | <b>الهاتف:</b> "+esc(o.customer_phone)+"</p><p><b>النوع:</b> "+type+(o.order_type==="dine_in"?" | <b>الطاولة:</b> "+esc(o.table_number):"")+"</p><div class='items'>"+items+"</div><p class='muted'>المجموع قبل الخصم: "+Number(o.subtotal_iqd??o.total_iqd).toLocaleString("en-US")+" د.ع"+(o.discount_code?"<br>كود الخصم: <b>"+esc(o.discount_code)+"</b> | الخصم: "+Number(o.discount_amount||0).toLocaleString("en-US")+" د.ع":"")+"</p><p class='total'>المبلغ النهائي: "+Number(o.total_iqd).toLocaleString("en-US")+" د.ع</p><span class='status'>"+(statusMap[o.status]||esc(o.status))+"</span><div class='actions'><button class='orange' onclick=\"setStatus('"+o.id+"','preparing')\">قيد التحضير</button><button class='green' onclick=\"setStatus('"+o.id+"','ready')\">جاهز</button><button onclick=\"setStatus('"+o.id+"','completed')\">مكتمل</button></div></article>";
  }).join("");
+}
+
+async function loadPromos(){
+ const root=document.getElementById("promoList");if(!root)return;
+ root.innerHTML="<p class='muted'>جارٍ تحميل الأكواد...</p>";
+ const {data,error}=await db.from("foodfort_promo_codes").select("id,code,discount_type,discount_value,min_order_iqd,usage_limit,used_count,expires_at,is_active").order("created_at",{ascending:false});
+ if(error){root.innerHTML="<p>تعذر تحميل الأكواد: "+esc(error.message)+"</p>";return;}
+ if(!data?.length){root.innerHTML="<p class='muted'>ماكو أكواد خصم حالياً.</p>";return;}
+ root.innerHTML=data.map(p=>{
+  const value=p.discount_type==="percent"?p.discount_value+"%":Number(p.discount_value).toLocaleString("en-US")+" د.ع";
+  const expiry=p.expires_at?new Date(p.expires_at).toLocaleString("ar-IQ"):"بدون";
+  return "<div class='promorow'><div><b>"+esc(p.code)+"</b> · "+value+"<div class='muted'>الحد الأدنى: "+Number(p.min_order_iqd).toLocaleString("en-US")+" د.ع | الاستخدام: "+p.used_count+"/"+(p.usage_limit??"∞")+" | الانتهاء: "+expiry+"</div><span class='status'>"+(p.is_active?"فعال":"متوقف")+"</span></div><div class='actions'><button class='"+(p.is_active?"orange":"green")+"' onclick=\\"togglePromo('"+p.id+"',"+(!p.is_active)+")\\">"+(p.is_active?"إيقاف":"تفعيل")+"</button><button onclick=\\"deletePromo('"+p.id+"')\\">حذف</button></div></div>";
+ }).join("");
+}
+async function savePromo(){
+ const code=document.getElementById("promoCode").value.trim().toUpperCase();
+ const type=document.getElementById("promoType").value;
+ const value=Number(document.getElementById("promoValue").value);
+ const min=Number(document.getElementById("promoMin").value||0);
+ const limitRaw=document.getElementById("promoLimit").value;
+ const expiry=document.getElementById("promoExpiry").value;
+ const msg=document.getElementById("promoMsg");
+ if(!/^[A-Z0-9_-]{3,32}$/.test(code)){msg.textContent="الكود لازم يكون 3 إلى 32 حرفاً أو رقماً";return;}
+ if(!Number.isInteger(value)||value<1||(type==="percent"&&value>100)||!Number.isInteger(min)||min<0){msg.textContent="تحقق من قيمة الخصم والحد الأدنى";return;}
+ if(limitRaw&&(!Number.isInteger(Number(limitRaw))||Number(limitRaw)<1)){msg.textContent="عدد الاستخدامات غير صالح";return;}
+ const payload={code,discount_type:type,discount_value:value,min_order_iqd:min,usage_limit:limitRaw?Number(limitRaw):null,expires_at:expiry?new Date(expiry).toISOString():null};
+ const {error}=await db.from("foodfort_promo_codes").insert(payload);
+ if(error){msg.textContent="تعذر إنشاء الكود: "+error.message;return;}
+ msg.textContent="تم إنشاء كود الخصم "+code+" بنجاح";msg.style.color="#16834b";
+ document.getElementById("promoCode").value="";document.getElementById("promoValue").value="";document.getElementById("promoLimit").value="";document.getElementById("promoExpiry").value="";
+ await loadPromos();
+}
+async function togglePromo(id,active){
+ const {error}=await db.from("foodfort_promo_codes").update({is_active:active}).eq("id",id);
+ if(error){alert("تعذر تحديث الكود: "+error.message);return;}await loadPromos();
+}
+async function deletePromo(id){
+ if(!confirm("متأكد تريد حذف كود الخصم؟"))return;
+ const {error}=await db.from("foodfort_promo_codes").delete().eq("id",id);
+ if(error){alert("تعذر حذف الكود: "+error.message);return;}await loadPromos();
 }
 async function setStatus(id,status){
  const {error}=await db.from("orders").update({status}).eq("id",id);
