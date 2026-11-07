@@ -88,7 +88,8 @@ async function placeOrder(){
      p_order_type:service==="صالة"?"dine_in":"takeaway",
      p_table_number:service==="صالة"?Number(table):null,
      p_items:payload,
-     p_discount_code:appliedDiscountCode||null
+     p_discount_code:appliedDiscountCode||null,
+     p_payment_method_id:paymentMethodId
    });
    if(error)throw error;
    const result=Array.isArray(data)?data[0]:data;
@@ -98,7 +99,9 @@ async function placeOrder(){
    document.getElementById("table").value="";
    msg.style.color="#16834b";
    try{localStorage.setItem("foodfort_last_order",String(result.order_number));}catch(_){}
-   msg.innerHTML="✅ تم إرسال طلبك بنجاح! رقم الطلب: <b>"+result.order_number+"</b><br><a href=\"track-order.html\" style=\"display:inline-block;margin-top:10px;background:#c90019;color:white;padding:10px 14px;border-radius:9px;text-decoration:none\">متابعة حالة الطلب</a>";
+   const selectedMethod=paymentMethods.find(m=>m.id===paymentMethodId);
+   const payNote=selectedMethod?.method_type==="cashier"?"تدفع عند الكاشير باستخدام رقم الطلب.":"طلبك بانتظار تحقق الإدارة من وصول التحويل.";
+   msg.innerHTML="✅ تم استلام طلبك! رقم الطلب: <b>"+result.order_number+"</b><br><b>"+htmlEsc(payNote)+"</b><br><a href='track-order.html' style='display:inline-block;margin-top:10px;background:#c90019;color:white;padding:10px 14px;border-radius:9px;text-decoration:none'>متابعة حالة الطلب</a>";
  }catch(err){
    console.error(err);
    msg.style.color="#c90019";
