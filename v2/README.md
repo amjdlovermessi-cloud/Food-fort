@@ -9,9 +9,9 @@ A clean rebuild of the Food Fort multi-restaurant SaaS platform.
 - No destructive SQL or production data migration has been run for this rebuild.
 
 ## V2 pages
-- `platform.html`: supplier login and platform overview, reading existing Supabase records.
+- `platform.html`: supplier login and platform overview, reading existing Supabase records.\n- `catalog.html`: supplier-only cross-restaurant catalog, product, price, and availability management.\n- `branding.html`: supplier-only restaurant identity editor (name, slug, tagline, logo, colors, theme, contact details).
 - `restaurant.html`: restaurant team login, scoped menu/category editing, and order status management.
-- `menu.html?restaurant=<slug>`: public restaurant menu and checkout through the existing secure `create_restaurant_order` RPC.
+- `menu.html?restaurant=<slug>`: public restaurant menu and checkout through the existing secure `create_restaurant_order` RPC.\n- `track-order.html?order=<order-id>`: customer order tracking in the original anonymous customer session.
 - `index.html`: V2 entry point.
 
 ## Roles
