@@ -2,45 +2,42 @@
 
 A clean rebuild of the Food Fort multi-restaurant SaaS platform.
 
-## Non-negotiable data safety
-- The existing `main` branch and its deployed pages remain untouched.
-- Existing Supabase project data is preserved. No DROP, TRUNCATE, destructive migration, or user deletion is part of this rebuild.
-- V2 is developed in the `rebuild-v2` Git branch and under `/v2`.
-- Existing tables are treated as the compatibility/data layer until a reviewed migration is justified.
+## Data safety
+- The production `main` branch and its deployed pages remain untouched.
+- The existing Supabase production project and all records are preserved.
+- V2 lives on the separate `rebuild-v2` Git branch under `/v2`.
+- No destructive SQL or production data migration has been run for this rebuild.
 
-## Product roles
+## V2 pages
+- `platform.html`: supplier login and platform overview, reading existing Supabase records.
+- `restaurant.html`: restaurant team login, scoped menu/category editing, and order status management.
+- `menu.html?restaurant=<slug>`: public restaurant menu and checkout through the existing secure `create_restaurant_order` RPC.
+- `index.html`: V2 entry point.
 
+## Roles
 ### Platform supplier
-Full platform-wide access:
-- Create, suspend, archive, and configure restaurants.
-- Set restaurant identity: name, logo, colors, theme, contact details, and public slug.
-- Manage plans, subscriptions, billing status, payment methods, staff invitations, and platform settings.
-- View every restaurant's categories, products, prices, availability, orders, and order history.
-- Inspect operational and sales analytics across all tenants.
+Full platform-wide visibility and management of restaurants, branding, menus, prices, orders, plans, subscriptions, staff, and settings.
 
 ### Restaurant team
-Scoped to its own restaurant:
-- Manage categories and menu items.
-- Edit item names, descriptions, prices, photos, sizes, and availability.
-- Receive and process orders.
-- Cannot change platform branding, subscription, global settings, or access another restaurant.
+Can manage only its own menu/categories and process its own orders. It cannot change platform branding or subscription settings, nor access another tenant.
 
 ### Customer
-- Browse an active restaurant's public menu.
-- Build a cart and place an order.
-- Track their own order with a safe public tracking flow.
+Can browse an active restaurant's menu, create a cart, and submit an order through the database-validated RPC. The database recalculates prices and validates product availability and payment method.
+
+## Current implementation notes
+- The new pages use the Supabase publishable key only. No service-role key is embedded in browser code.
+- Restaurant workspace requires a real restaurant membership created by the supplier. Current prototype restaurant has no member rows or owner account linked yet, so manager login must be invited before that screen can be fully tested.
+- Supplier dashboard reads platform-wide restaurant records. Order visibility may still be restricted by the existing supplier order policy and must be tested/fixed before claiming complete supplier visibility.
+- Customer checkout uses anonymous Supabase auth and the existing `create_restaurant_order` RPC. Anonymous sign-in must be enabled in Supabase Auth.
+- No production browser end-to-end test has been completed. V2 must not be merged into the live site until login, RLS, menu, checkout, order status, and tenant-isolation tests pass.
+
+## Existing data snapshot during discovery
+1 restaurant, 11 categories, 88 products, 5 orders, 1 platform admin, 1 active subscription. These are test/prototype data and may change; do not treat them as real business traction.
 
 ## Rebuild sequence
-1. V2 UI shell and navigation, isolated from production.
-2. Authentication and role-aware route guards.
-3. Supplier dashboard and restaurant management.
-4. Restaurant workspace: menu and orders.
-5. Public menu, cart, checkout, and tracking.
-6. Analytics, subscription lifecycle, payment integrations.
-7. RLS review, permission tests, and browser end-to-end tests.
-8. Controlled cutover only after explicit owner approval.
-
-## Existing database inventory (read-only discovery)
-Current public tables include restaurants, restaurant_members, restaurant_subscriptions, subscription_plans, menu_categories, menu_products, restaurant_payment_methods, orders, order_items, platform_admins, restaurant_profile, and foodfort_promo_codes. Existing row counts observed during discovery: 1 restaurant, 11 categories, 88 products, 5 orders, 1 platform admin, and 1 active subscription.
-
-These are discovery snapshots, not a promise that counts remain unchanged. Do not seed demo rows into production.
+1. V2 supplier overview and navigation.
+2. Restaurant workspace and public menu/checkout.
+3. Supplier CRUD for restaurants, identity, payment methods, staff, and subscriptions.
+4. Supplier all-tenant order visibility and reporting.
+5. Authentication, RLS, and cross-tenant isolation tests.
+6. Browser end-to-end testing and controlled cutover after explicit owner approval.
