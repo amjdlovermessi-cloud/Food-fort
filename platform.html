@@ -39,7 +39,7 @@ button:disabled{opacity:.55;cursor:wait}
 <h2>دخول المورّد الرئيسي</h2><p class="muted">هذه اللوحة مخصصة لحساب مالك المنصة فقط.</p>
 <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" value="amjdlovermessi@gmail.com"></div>
 <div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div>
-<button id="loginBtn" type="button">تسجيل الدخول</button><p id="loginMsg" class="muted"></p>
+<button id="loginBtn" type="button">تسجيل الدخول</button> <button id="forgotBtn" class="secondary" type="button">نسيت كلمة المرور؟</button><p id="loginMsg" class="muted"></p><section id="resetBox" style="display:none;margin-top:16px"><h3>تعيين كلمة مرور جديدة</h3><div class="field"><label>كلمة المرور الجديدة</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="8 أحرف على الأقل"></div><button id="savePasswordBtn" type="button">حفظ كلمة المرور الجديدة</button><p id="resetMsg" class="muted"></p></section>
 </section>
 <section id="app">
 <div class="stats">
@@ -242,5 +242,46 @@ async function toggleRestaurant(id,status){const next=status==="active"?"suspend
 function openMenu(slug){window.open("platform-preview.html?restaurant="+encodeURIComponent(slug),"_blank")}
 async function logout(){await db.auth.signOut();showLogin("تم تسجيل الخروج")}
 document.getElementById("loginBtn").addEventListener("click",login);
-(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await enter(data.session.user);else showLogin()}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
+document.getElementById("forgotBtn").addEventListener("click",requestPasswordReset);
+document.getElementById("savePasswordBtn").addEventListener("click",saveNewPassword);
+async function requestPasswordReset(){
+ const msg=document.getElementById("loginMsg"),email=document.getElementById("email").value.trim(),b=document.getElementById("forgotBtn");
+ if(!db){msg.textContent="تعذر الاتصال بخادم تسجيل الدخول.";return}
+ if(!email){msg.textContent="اكتب بريد حساب المورّد أولاً.";return}
+ b.disabled=true;msg.textContent="جارٍ إرسال رابط الاستعادة إلى بريدك...";
+ try{
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname+"?reset=1"});
+  if(error)throw error;
+  msg.textContent="تم طلب رابط الاستعادة. افتح بريدك واضغط الرابط، ثم ارجع إلى هذه الصفحة لتعيين كلمة المرور الجديدة.";
+ }catch(e){msg.textContent="تعذر إرسال رابط الاستعادة: "+(e.message||"خطأ غير معروف")}
+ finally{b.disabled=false}
+}
+async function saveNewPassword(){
+ const p=document.getElementById("newPassword").value,msg=document.getElementById("resetMsg"),b=document.getElementById("savePasswordBtn");
+ if(p.length<8){msg.textContent="استخدم كلمة مرور من 8 أحرف على الأقل.";return}
+ b.disabled=true;msg.textContent="جارٍ حفظ كلمة المرور...";
+ try{
+  const {error}=await db.auth.updateUser({password:p});
+  if(error)throw error;
+  msg.textContent="تم تغيير كلمة المرور بنجاح. ارجع لتسجيل الدخول بكلمتك الجديدة.";
+  document.getElementById("resetBox").style.display="none";
+  document.getElementById("password").value="";
+ }catch(e){msg.textContent="تعذر تغيير كلمة المرور: "+(e.message||"انتهت جلسة الاستعادة أو الرابط غير صالح. اطلب رابطاً جديداً.")}
+ finally{b.disabled=false}
+}
+db?.auth.onAuthStateChange((event)=>{
+ if(event==="PASSWORD_RECOVERY"){
+  document.getElementById("login").style.display="block";
+  document.getElementById("app").style.display="none";
+  document.getElementById("resetBox").style.display="block";
+  document.getElementById("loginMsg").textContent="تم التحقق من رابط الاستعادة. اكتب كلمة مرور جديدة أدناه.";
+ }
+});
+(async()=>{if(!db){showLogin("تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت ثم حدّث الصفحة.");return}try{const {data,error}=await db.auth.getSession();if(error)throw error;
+ if(new URLSearchParams(location.search).get("reset")==="1"){
+  document.getElementById("login").style.display="block";document.getElementById("app").style.display="none";
+  document.getElementById("resetBox").style.display="block";
+  document.getElementById("loginMsg").textContent=data.session?"اكتب كلمة المرور الجديدة أدناه.":"افتح رابط الاستعادة الذي وصلك بالبريد مرة أخرى إذا لم تظهر جلسة الاستعادة.";
+ }else if(data.session)await enter(data.session.user);else showLogin()
+}catch(e){showLogin("تعذر تهيئة لوحة المنصة: "+(e.message||"خطأ غير معروف"))}})();
 </script></body></html>
