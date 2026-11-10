@@ -1,43 +1,48 @@
 # Food Fort V2
 
-A clean rebuild of the Food Fort multi-restaurant SaaS platform.
+إعادة بناء مستقلة لمنصة Food Fort متعددة المطاعم.
 
-## Data safety
-- The production `main` branch and its deployed pages remain untouched.
-- The existing Supabase production project and all records are preserved.
-- V2 lives on the separate `rebuild-v2` Git branch under `/v2`.
-- No destructive SQL or production data migration has been run for this rebuild.
+## حماية البيانات
+- فرع `main` وصفحات الإنتاج القديمة لم يتم تعديلها.
+- قاعدة بيانات Supabase وبيانات المطاعم والطلبات الحالية محفوظة.
+- التطوير الجديد موجود في فرع `rebuild-v2` داخل مجلد `v2/`.
+- لم تُنفذ أي أوامر حذف أو تفريغ بيانات.
 
-## V2 pages
-- `platform.html`: supplier login and platform overview, reading existing Supabase records.\n- `catalog.html`: supplier-only cross-restaurant catalog, product, price, and availability management.\n- `branding.html`: supplier-only restaurant identity editor (name, slug, tagline, logo, colors, theme, contact details).
-- `restaurant.html`: restaurant team login, scoped menu/category editing, and order status management.
-- `menu.html?restaurant=<slug>`: public restaurant menu and checkout through the existing secure `create_restaurant_order` RPC.\n- `track-order.html?order=<order-id>`: customer order tracking in the original anonymous customer session.
-- `index.html`: V2 entry point.
+## صفحات V2
+- `index.html`: مدخل لوحة المورّد.
+- `platform.html`: لوحة المورّد والإحصاءات وقائمة المطاعم والطلبات.
+- `create-restaurant.html`: إنشاء مطعم وإرسال دعوة المدير عبر Edge Function الحالية.
+- `team.html`: دعوة مدير أو كاشير إلى مطعم.
+- `branding.html`: تعديل اسم المطعم وشعاره وألوانه وثيمه وبياناته.
+- `catalog.html`: إدارة أصناف وأسعار وتوفر جميع المطاعم من حساب المورّد.
+- `billing.html`: إدارة وسائل الدفع والاشتراكات.
+- `restaurant.html`: مساحة فريق المطعم لإدارة أقسامه وأصنافه وطلباته.
+- `menu.html?restaurant=<slug>`: المنيو العام وسلة الشراء وإرسال الطلب عبر RPC آمن.
+- `track-order.html?order=<order-id>`: متابعة الطلب من جلسة الزبون نفسها.
+- `migrations/20261110_food_fort_v2_supplier_policies.sql`: سياسات الوصول الإضافية للمورّد.
 
-## Roles
-### Platform supplier
-Full platform-wide visibility and management of restaurants, branding, menus, prices, orders, plans, subscriptions, staff, and settings.
+## الصلاحيات
+### المورّد
+إدارة المطاعم وهوياتها، جميع القوائم والأسعار، وسائل الدفع، الاشتراكات، دعوات الفريق، والاطلاع على طلبات جميع المطاعم.
 
-### Restaurant team
-Can manage only its own menu/categories and process its own orders. It cannot change platform branding or subscription settings, nor access another tenant.
+### فريق المطعم
+إدارة أصناف وأقسام مطعمه فقط ومتابعة طلباته. لا يمكنه تغيير هوية المنصة أو الاشتراك أو الوصول إلى مطاعم أخرى.
 
-### Customer
-Can browse an active restaurant's menu, create a cart, and submit an order through the database-validated RPC. The database recalculates prices and validates product availability and payment method.
+### الزبون
+تصفح المنيو النشط، إضافة الأصناف إلى السلة، إرسال الطلب، ومتابعته ضمن جلسة الطلب.
 
-## Current implementation notes
-- The new pages use the Supabase publishable key only. No service-role key is embedded in browser code.
-- Restaurant workspace requires a real restaurant membership created by the supplier. Current prototype restaurant has no member rows or owner account linked yet, so manager login must be invited before that screen can be fully tested.
-- Supplier dashboard reads platform-wide restaurant records. Order visibility may still be restricted by the existing supplier order policy and must be tested/fixed before claiming complete supplier visibility.
-- Customer checkout uses anonymous Supabase auth and the existing `create_restaurant_order` RPC. Anonymous sign-in must be enabled in Supabase Auth.
-- No production browser end-to-end test has been completed. V2 must not be merged into the live site until login, RLS, menu, checkout, order status, and tenant-isolation tests pass.
+## ما تم ربطه والتحقق منه
+- الواجهات الجديدة تستخدم Supabase publishable key فقط، ولا تحتوي على service-role key.
+- تمت إضافة صلاحيات RLS للمورّد عبر سياسات موجودة ومجمّعة، دون تعديل أي صفوف بيانات.
+- اختبار محاكاة دور المورّد أكد قدرته على قراءة المطعم والمنتجات والطلبات وعناصر الطلب: 1 مطعم، 88 منتجاً، 5 طلبات، 7 عناصر طلب.
+- اختبار دور anon أكد ظهور المنيو العام: مطعم واحد، 11 قسماً، 88 منتجاً، ووسيلة دفع واحدة.
+- مساحة فريق المطعم تحتاج دعوة عضو فعلي. المطعم التجريبي الحالي لا يحتوي على أعضاء مرتبطين بعد.
+- لم يكتمل اختبار متصفح شامل لإرسال الطلب أو البريد الإلكتروني للدعوات. يلزم التأكد من تفعيل Anonymous Sign-ins في Supabase Auth قبل تجربة Checkout.
 
-## Existing data snapshot during discovery
-1 restaurant, 11 categories, 88 products, 5 orders, 1 platform admin, 1 active subscription. These are test/prototype data and may change; do not treat them as real business traction.
+## ملاحظات أمنية معلومة
+- Supabase Advisor ما زال يرصد View باسم `restaurant_public` بصلاحية SECURITY DEFINER، ودالة قديمة `submit_foodfort_payment_proof` قابلة للتنفيذ من المستخدمين المسجلين. هذه نقاط قائمة من البنية السابقة ولم أغيّرها في هذه المرحلة.
+- توجد تحذيرات قديمة متعلقة بسياسات anonymous access وإعداد حماية كلمات المرور المسربة. يجب مراجعتها قبل الإطلاق التجاري.
+- لا تُدمج V2 في الموقع المنشور قبل اختبار تسجيل الدخول، عزل المطاعم، إنشاء الطلب، تتبع الطلب، الدعوات، ووسائل الدفع في متصفح فعلي.
 
-## Rebuild sequence
-1. V2 supplier overview and navigation.
-2. Restaurant workspace and public menu/checkout.
-3. Supplier CRUD for restaurants, identity, payment methods, staff, and subscriptions.
-4. Supplier all-tenant order visibility and reporting.
-5. Authentication, RLS, and cross-tenant isolation tests.
-6. Browser end-to-end testing and controlled cutover after explicit owner approval.
+## لقطة البيانات وقت الفحص
+مطعم واحد، 11 قسماً، 88 منتجاً، 5 طلبات، حساب مورّد واحد، واشتراك نشط واحد. هذه بيانات نموذج أولي وليست مؤشرات مبيعات تجارية.
