@@ -6,17 +6,18 @@
 </style></head>
 <body>
 <div id="login" class="login"><div class="brand">NEXORA STUDIO <small>RESTAURANT WORKSPACE · V2</small></div><h1>تسجيل دخول فريق المطعم</h1><p class="muted">ادخل بحساب المدير أو الكاشير للوصول إلى بيانات مطعمك فقط.</p><div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div><button id="loginBtn" style="width:100%">تسجيل الدخول</button><div id="loginMsg" class="status"></div></div>
-<div id="app" class="hidden"><div class="wrap"><header class="top"><div class="brand">NEXORA STUDIO <small>لوحة إدارة المطعم</small></div><div class="row"><span id="restaurantName" class="pill">جاري التحميل</span><button class="ghost" id="logout">خروج</button></div></header><div class="layout"><aside class="side"><button class="active" data-tab="orders">الطلبات</button><button data-tab="products">الأصناف</button><button data-tab="categories">الأقسام</button></aside><main class="main">
+<div id="app" class="hidden"><div class="wrap"><header class="top"><div class="brand">NEXORA STUDIO <small>لوحة إدارة المطعم</small></div><div class="row"><span id="restaurantName" class="pill">جاري التحميل</span><button class="ghost" id="logout">خروج</button></div></header><div class="layout"><aside class="side"><button class="active" data-tab="orders">الطلبات</button><button data-tab="products">الأصناف</button><button data-tab="categories">الأقسام</button><button data-tab="customMenu">منيو HTML / ZIP</button></aside><main class="main">
 <section id="orders" class="panel"><h2>الطلبات الواردة</h2><p class="muted">تابع حالة الطلبات وحدّث مراحل التجهيز.</p><div id="ordersBox" class="status">جاري تحميل الطلبات...</div></section>
 <section id="products" class="panel hidden"><h2>إدارة الأصناف</h2><form id="productForm"><input type="hidden" id="productId"><div class="grid"><div class="field"><label>اسم الصنف</label><input id="productName" required maxlength="160"></div><div class="field"><label>القسم</label><select id="productCategory" required></select></div><div class="field"><label>السعر بالدينار</label><input id="productPrice" type="number" min="0" max="10000000" required></div><div class="field"><label>صورة الطبق من معرض الهاتف</label><input id="productImage" type="file" accept="image/*"><img id="productImagePreview" alt="معاينة صورة الصنف" style="display:none;max-width:130px;max-height:100px;object-fit:cover;margin-top:8px;border-radius:9px"></div></div><div class="field"><label>الوصف</label><textarea id="productDescription"></textarea></div><div class="row"><button type="submit">حفظ الصنف</button><button type="button" class="ghost" id="clearProduct">تفريغ</button></div></form><div id="productsBox" class="tablewrap status">جاري تحميل الأصناف...</div></section>
 <section id="categories" class="panel hidden"><h2>إدارة الأقسام</h2><form id="categoryForm" class="row"><input id="categoryName" placeholder="اسم القسم الجديد" maxlength="80" required style="flex:1;min-width:170px;padding:11px;border:1px solid var(--line);border-radius:9px"><button>إضافة قسم</button></form><div id="categoriesBox" class="tablewrap status"></div></section>
+<section id="customMenu" class="panel hidden"><h2>رفع منيو جاهز ونشره</h2><p class="muted">ارفع ملف HTML واحداً أو ملف ZIP يحتوي على index.html في المجلد الرئيسي مع الصور وملفات CSS وJavaScript. سيبقى المنيو الحالي منشوراً إلى أن تضغط «نشر النسخة الجديدة».</p><div class="field"><label>ملف المنيو (HTML أو ZIP)</label><input id="customMenuFile" type="file" accept=".html,.htm,.zip,text/html,application/zip,application/x-zip-compressed"></div><div class="row"><button type="button" id="uploadCustomMenu">رفع وتجهيز المعاينة</button><button type="button" class="ghost" id="previewCurrentMenu">معاينة المنيو المنشور</button><button type="button" id="previewDraftMenu" class="ghost" disabled>معاينة النسخة الجديدة</button><button type="button" id="publishCustomMenu" disabled>نشر النسخة الجديدة</button></div><div id="customMenuStatus" class="status">يمكنك تجربة النسخة الجديدة قبل نشرها. رفع الملف وحده لا يغيّر المنيو المنشور.</div><div id="customMenuFrameWrap" class="hidden" style="margin-top:12px"><iframe id="customMenuFrame" title="معاينة المنيو" sandbox="allow-scripts allow-forms allow-popups allow-modals" style="width:100%;height:620px;border:1px solid #e5eaf0;border-radius:12px;background:#fff"></iframe></div></section>
 </main></div><p id="appMsg" class="status"></p></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 const SUPABASE_URL="https://gghlmpxmiivrkiltydxf.supabase.co";
 const SUPABASE_KEY="sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let restaurantId=null,restaurant=null,categories=[],products=[],currentProductImageUrl=null;
+let restaurantId=null,restaurant=null,categories=[],products=[],currentProductImageUrl=null,draftMenuUrl=null;
 const $=id=>document.getElementById(id);
 const msg=(s)=>$('appMsg').textContent=s;
 const money=n=>Number(n||0).toLocaleString('ar-IQ')+' د.ع';
@@ -30,9 +31,9 @@ async function boot(){
  const m=await db.from('restaurant_members').select('restaurant_id,role').eq('user_id',user.id);
  if(m.error||!m.data?.length){$('restaurantName').textContent='لا يوجد مطعم مرتبط';msg(m.error?.message||'هذا الحساب غير مضاف إلى فريق أي مطعم.');return}
  restaurantId=m.data[0].restaurant_id;
- const r=await db.from('restaurants').select('id,restaurant_name,slug').eq('id',restaurantId).maybeSingle();
+ const r=await db.from('restaurants').select('id,restaurant_name,slug,custom_menu_url').eq('id',restaurantId).maybeSingle();
  if(r.error||!r.data){msg(r.error?.message||'تعذر تحميل المطعم.');return}
- restaurant=r.data;$('restaurantName').textContent=restaurant.restaurant_name;
+ restaurant=r.data;$('restaurantName').textContent=restaurant.restaurant_name;if(restaurant.custom_menu_url){$('customMenuStatus').textContent='يوجد منيو مخصص منشور حالياً. رفع نسخة جديدة لن يستبدله حتى تضغط نشر.';}
  await Promise.all([loadCategories(),loadProducts(),loadOrders()]);
 }
 async function loadCategories(){
@@ -64,6 +65,36 @@ document.addEventListener('click',async e=>{
  const cat=e.target.closest('[data-toggle-cat]');if(cat){const {error}=await db.from('menu_categories').update({is_active:cat.dataset.active!=='true'}).eq('id',cat.dataset.toggleCat).eq('restaurant_id',restaurantId);if(error)msg(error.message);else await loadCategories()}
 });
 document.addEventListener('change',async e=>{if(e.target.matches('[data-order]')){const {error}=await db.from('orders').update({status:e.target.value}).eq('id',e.target.dataset.order).eq('restaurant_id',restaurantId);if(error){msg(error.message);await loadOrders()}else msg('تم تحديث حالة الطلب.')}});
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['orders','products','categories'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
+
+const MENU_BUCKET='nexora-menus';
+function menuPublicUrl(path){return db.storage.from(MENU_BUCKET).getPublicUrl(path).data.publicUrl}
+function validMenuUrl(raw){try{const u=new URL(raw);return u.origin===new URL(SUPABASE_URL).origin&&u.pathname.startsWith('/storage/v1/object/public/'+MENU_BUCKET+'/')}catch{return false}}
+function menuMime(path){const ext=(path.split('.').pop()||'').toLowerCase();return ({html:'text/html',htm:'text/html',css:'text/css',js:'application/javascript',mjs:'application/javascript',json:'application/json',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',ico:'image/x-icon',woff:'font/woff',woff2:'font/woff2',ttf:'font/ttf',otf:'font/otf',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',txt:'text/plain',pdf:'application/pdf'})[ext]||'application/octet-stream'}
+async function prepareCustomMenu(){
+ const file=$('customMenuFile').files[0];if(!file)throw new Error('اختر ملف HTML أو ZIP أولاً.');
+ const isZip=/\.zip$/i.test(file.name)||file.type.includes('zip');const base=restaurantId+'/custom-menu/'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+ const files=[];
+ if(isZip){
+  if(file.size>25*1024*1024)throw new Error('حجم ملف ZIP يجب ألا يتجاوز 25 ميغابايت.');
+  const zip=await JSZip.loadAsync(file);let entries=Object.values(zip.files).filter(x=>!x.dir);
+  if(entries.length>120)throw new Error('الحد الأقصى 120 ملفاً داخل ZIP.');
+  const firstParts=entries.map(x=>x.name.split('/').filter(Boolean));if(firstParts.length&&firstParts.every(p=>p.length>1&&p[0]===firstParts[0][0]))entries=entries.map(x=>{const prefix=firstParts[0][0]+'/';return x.name.startsWith(prefix)?Object.assign(Object.create(Object.getPrototypeOf(x)),x,{name:x.name.slice(prefix.length)}):x});
+  let total=0;for(const entry of entries){const path=entry.name.replace(/\\/g,'/');if(!path||path.startsWith('/')||path.split('/').some(p=>p==='..'||p==='.'||!p))throw new Error('ملف ZIP يحتوي على مسار غير صالح: '+path);const blob=await entry.async('blob');total+=blob.size;if(total>40*1024*1024)throw new Error('الحجم بعد فك الضغط تجاوز 40 ميغابايت.');files.push({path,blob})}
+ }else{
+  if(!/\.html?$/i.test(file.name)&&file.type!=='text/html')throw new Error('الملف يجب أن يكون بصيغة HTML أو ZIP.');
+  if(file.size>2*1024*1024)throw new Error('ملف HTML الواحد يجب ألا يتجاوز 2 ميغابايت.');
+  files.push({path:'index.html',blob:file});
+ }
+ if(!files.some(x=>x.path.toLowerCase()==='index.html'))throw new Error('لم نعثر على index.html في المجلد الرئيسي داخل ZIP.');
+ for(let i=0;i<files.length;i++){const x=files[i];$('customMenuStatus').textContent='جارٍ رفع الملفات '+(i+1)+' / '+files.length+'...';const path=base+'/'+x.path;const {error}=await db.storage.from(MENU_BUCKET).upload(path,x.blob,{contentType:menuMime(x.path),cacheControl:'3600',upsert:false});if(error)throw error}
+ draftMenuUrl=menuPublicUrl(base+'/index.html');if(!validMenuUrl(draftMenuUrl))throw new Error('تعذر إنشاء رابط معاينة آمن.');
+ $('previewDraftMenu').disabled=false;$('publishCustomMenu').disabled=false;$('customMenuStatus').textContent='اكتمل تجهيز '+files.length+' ملفاً. النسخة جاهزة للمعاينة ولم تُنشر بعد.';
+}
+$('uploadCustomMenu').onclick=async()=>{const b=$('uploadCustomMenu');b.disabled=true;$('previewDraftMenu').disabled=true;$('publishCustomMenu').disabled=true;$('customMenuStatus').textContent='جارٍ فحص الملف...';try{await prepareCustomMenu()}catch(err){draftMenuUrl=null;$('customMenuStatus').textContent=err.message||'تعذر تجهيز المنيو.'}finally{b.disabled=false}};
+$('previewDraftMenu').onclick=()=>{if(!draftMenuUrl||!validMenuUrl(draftMenuUrl))return;$('customMenuFrame').src=draftMenuUrl;$('customMenuFrameWrap').classList.remove('hidden');window.open('menu.html?restaurant='+encodeURIComponent(restaurant.slug)+'&custom_preview='+encodeURIComponent(draftMenuUrl),'_blank','noopener')};
+$('previewCurrentMenu').onclick=()=>window.open('menu.html?restaurant='+encodeURIComponent(restaurant.slug),'_blank','noopener');
+$('publishCustomMenu').onclick=async()=>{if(!draftMenuUrl||!validMenuUrl(draftMenuUrl))return;if(!confirm('نشر النسخة الجديدة واستبدال المنيو الحالي؟'))return;const b=$('publishCustomMenu');b.disabled=true;$('customMenuStatus').textContent='جارٍ نشر المنيو...';try{const {error}=await db.from('restaurants').update({custom_menu_url:draftMenuUrl}).eq('id',restaurantId);if(error)throw error;restaurant.custom_menu_url=draftMenuUrl;$('customMenuStatus').textContent='تم نشر المنيو الجديد بنجاح. رابط المطعم العام يعرض النسخة الجديدة الآن.';msg('تم نشر المنيو المخصص.')}catch(err){$('customMenuStatus').textContent=err.message||'تعذر نشر المنيو.'}finally{b.disabled=false}};
+
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['orders','products','categories','customMenu'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
 db.auth.getSession().then(({data})=>{if(data.session)boot()});
 </script></body></html>
