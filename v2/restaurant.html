@@ -85,7 +85,7 @@ async function prepareCustomMenu(){
   if(file.size>2*1024*1024)throw new Error('ملف HTML الواحد يجب ألا يتجاوز 2 ميغابايت.');
   files.push({path:'index.html',blob:file});
  }
- if(!files.some(x=>x.path.toLowerCase()==='index.html'))throw new Error('لم نعثر على index.html في المجلد الرئيسي داخل ZIP.');
+ const rootIndex=files.find(x=>x.path.toLowerCase()==='index.html');if(!rootIndex)throw new Error('لم نعثر على index.html في المجلد الرئيسي داخل ZIP.');rootIndex.path='index.html';
  for(let i=0;i<files.length;i++){const x=files[i];$('customMenuStatus').textContent='جارٍ رفع الملفات '+(i+1)+' / '+files.length+'...';const path=base+'/'+x.path;const {error}=await db.storage.from(MENU_BUCKET).upload(path,x.blob,{contentType:menuMime(x.path),cacheControl:'3600',upsert:false});if(error)throw error}
  draftMenuUrl=menuPublicUrl(base+'/index.html');if(!validMenuUrl(draftMenuUrl))throw new Error('تعذر إنشاء رابط معاينة آمن.');
  $('previewDraftMenu').disabled=false;$('publishCustomMenu').disabled=false;$('customMenuStatus').textContent='اكتمل تجهيز '+files.length+' ملفاً. النسخة جاهزة للمعاينة ولم تُنشر بعد.';
