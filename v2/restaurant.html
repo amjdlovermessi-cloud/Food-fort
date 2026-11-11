@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b2b"><title>Food Fort V2 | إدارة المطعم</title>
+<style>
+:root{--navy:#101b2b;--teal:#12a99b;--bg:#f4f6f8;--line:#e5eaf0;--muted:#748195;--ink:#172437}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:10px 14px;background:var(--navy);color:#fff;font-weight:bold}.ghost{background:#eef2f6;color:#27364a}.danger{background:#fff0f0;color:#b42332}.wrap{max-width:1200px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 20px}.brand{font-weight:900;font-size:18px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:5px}.layout{display:grid;grid-template-columns:210px 1fr;gap:16px;margin-top:16px}.side,.panel{background:#fff;border:1px solid var(--line);border-radius:14px}.side{padding:12px;height:max-content}.side button{display:block;width:100%;text-align:right;margin:4px 0;background:transparent;color:#536174}.side button.active{background:#e9f8f6;color:#087f77}.main{min-width:0}.panel{padding:18px;margin-bottom:14px}.panel h2{font-size:15px;margin:0 0 14px}.muted{color:var(--muted);font-size:12px;line-height:1.8}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field label{display:block;font-size:11px;font-weight:bold;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:0}.field textarea{min-height:75px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:right;padding:11px;border-bottom:1px solid var(--line);font-size:12px}th{color:var(--muted);font-weight:bold}.login{max-width:420px;margin:8vh auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:25px}.login h1{font-size:21px}.login .field{margin:12px 0}.status{font-size:12px;color:var(--muted);padding:10px 0}.hidden{display:none!important}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eaf7f5;color:#087f77;font-size:10px}@media(max-width:760px){.wrap{padding:12px}.layout{grid-template-columns:1fr}.side{display:flex;overflow:auto}.side button{white-space:nowrap;width:auto}.grid{grid-template-columns:1fr}.top{padding:13px}.top .muted{display:none}}
+</style></head>
+<body>
+<div id="login" class="login"><div class="brand">FOOD FORT <small>RESTAURANT WORKSPACE · V2</small></div><h1>تسجيل دخول فريق المطعم</h1><p class="muted">ادخل بحساب المدير أو الكاشير للوصول إلى بيانات مطعمك فقط.</p><div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password"></div><button id="loginBtn" style="width:100%">تسجيل الدخول</button><div id="loginMsg" class="status"></div></div>
+<div id="app" class="hidden"><div class="wrap"><header class="top"><div class="brand">FOOD FORT <small>لوحة إدارة المطعم</small></div><div class="row"><span id="restaurantName" class="pill">جاري التحميل</span><button class="ghost" id="logout">خروج</button></div></header><div class="layout"><aside class="side"><button class="active" data-tab="orders">الطلبات</button><button data-tab="products">الأصناف</button><button data-tab="categories">الأقسام</button></aside><main class="main">
+<section id="orders" class="panel"><h2>الطلبات الواردة</h2><p class="muted">تابع حالة الطلبات وحدّث مراحل التجهيز.</p><div id="ordersBox" class="status">جاري تحميل الطلبات...</div></section>
+<section id="products" class="panel hidden"><h2>إدارة الأصناف</h2><form id="productForm"><input type="hidden" id="productId"><div class="grid"><div class="field"><label>اسم الصنف</label><input id="productName" required maxlength="160"></div><div class="field"><label>القسم</label><select id="productCategory" required></select></div><div class="field"><label>السعر بالدينار</label><input id="productPrice" type="number" min="0" max="10000000" required></div><div class="field"><label>رابط الصورة</label><input id="productImage" type="url"></div></div><div class="field"><label>الوصف</label><textarea id="productDescription"></textarea></div><div class="row"><button type="submit">حفظ الصنف</button><button type="button" class="ghost" id="clearProduct">تفريغ</button></div></form><div id="productsBox" class="tablewrap status">جاري تحميل الأصناف...</div></section>
+<section id="categories" class="panel hidden"><h2>إدارة الأقسام</h2><form id="categoryForm" class="row"><input id="categoryName" placeholder="اسم القسم الجديد" maxlength="80" required style="flex:1;min-width:170px;padding:11px;border:1px solid var(--line);border-radius:9px"><button>إضافة قسم</button></form><div id="categoriesBox" class="tablewrap status"></div></section>
+</main></div><p id="appMsg" class="status"></p></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://gghlmpxmiivrkiltydxf.supabase.co";
+const SUPABASE_KEY="sb_publishable_-oLYi0Su5SXOGmQBuZcvcw_TIHJ1D8h";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let restaurantId=null,restaurant=null,categories=[],products=[];
+const $=id=>document.getElementById(id);
+const msg=(s)=>$('appMsg').textContent=s;
+const money=n=>Number(n||0).toLocaleString('ar-IQ')+' د.ع';
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('loginBtn').onclick=async()=>{ $('loginMsg').textContent='جارٍ التحقق...'; const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value}); if(error){$('loginMsg').textContent=error.message;return} await boot(); };
+$('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+async function boot(){
+ const {data:{user}}=await db.auth.getUser(); if(!user){$('login').classList.remove('hidden');return}
+ $('login').classList.add('hidden');$('app').classList.remove('hidden');
+ const m=await db.from('restaurant_members').select('restaurant_id,role').eq('user_id',user.id);
+ if(m.error||!m.data?.length){$('restaurantName').textContent='لا يوجد مطعم مرتبط';msg(m.error?.message||'هذا الحساب غير مضاف إلى فريق أي مطعم.');return}
+ restaurantId=m.data[0].restaurant_id;
+ const r=await db.from('restaurants').select('id,restaurant_name,slug').eq('id',restaurantId).maybeSingle();
+ if(r.error||!r.data){msg(r.error?.message||'تعذر تحميل المطعم.');return}
+ restaurant=r.data;$('restaurantName').textContent=restaurant.restaurant_name;
+ await Promise.all([loadCategories(),loadProducts(),loadOrders()]);
+}
+async function loadCategories(){
+ const {data,error}=await db.from('menu_categories').select('id,name,is_active,sort_order').eq('restaurant_id',restaurantId).order('sort_order');
+ if(error){$('categoriesBox').textContent=error.message;return}
+ categories=data||[];$('productCategory').innerHTML=categories.filter(c=>c.is_active).map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+ $('categoriesBox').innerHTML='<table><thead><tr><th>القسم</th><th>الحالة</th><th></th></tr></thead><tbody>'+categories.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+(c.is_active?'نشط':'مخفي')+'</td><td><button class="ghost" data-toggle-cat="'+c.id+'" data-active="'+c.is_active+'">'+(c.is_active?'إخفاء':'تفعيل')+'</button></td></tr>').join('')+'</tbody></table>';
+}
+async function loadProducts(){
+ const {data,error}=await db.from('menu_products').select('id,name,description,price_iqd,image_url,category_id,is_available').eq('restaurant_id',restaurantId).order('sort_order');
+ if(error){$('productsBox').textContent=error.message;return}
+ products=data||[];$('productsBox').innerHTML='<table><thead><tr><th>الصنف</th><th>السعر</th><th>التوفر</th><th></th></tr></thead><tbody>'+products.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+money(p.price_iqd)+'</td><td>'+(p.is_available?'متاح':'غير متاح')+'</td><td><button class="ghost" data-edit="'+p.id+'">تعديل</button> <button class="danger" data-delete="'+p.id+'">حذف</button></td></tr>').join('')+'</tbody></table>';
+}
+async function loadOrders(){
+ const {data,error}=await db.from('orders').select('id,order_number,customer_name,customer_phone,total_iqd,status,payment_status,created_at').eq('restaurant_id',restaurantId).order('created_at',{ascending:false}).limit(100);
+ if(error){$('ordersBox').textContent='تعذر تحميل الطلبات: '+error.message;return}
+ $('ordersBox').innerHTML=data?.length?'<table><thead><tr><th>رقم</th><th>الزبون</th><th>المبلغ</th><th>الدفع</th><th>الحالة</th><th>تحديث</th></tr></thead><tbody>'+data.map(o=>'<tr><td>#'+o.order_number+'</td><td>'+esc(o.customer_name)+'<br><small>'+esc(o.customer_phone)+'</small></td><td>'+money(o.total_iqd)+'</td><td>'+esc(o.payment_status)+'</td><td>'+esc(o.status)+'</td><td><select data-order="'+o.id+'"><option value="new" '+(o.status==='new'?'selected':'')+'>جديد</option><option value="preparing" '+(o.status==='preparing'?'selected':'')+'>قيد التحضير</option><option value="ready" '+(o.status==='ready'?'selected':'')+'>جاهز</option><option value="completed" '+(o.status==='completed'?'selected':'')+'>مكتمل</option><option value="cancelled" '+(o.status==='cancelled'?'selected':'')+'>ملغي</option></select></td></tr>').join('')+'</tbody></table>':'لا توجد طلبات حالياً';
+}
+$('productForm').onsubmit=async e=>{e.preventDefault();const id=$('productId').value;const payload={restaurant_id:restaurantId,name:$('productName').value.trim(),category_id:$('productCategory').value,price_iqd:Number($('productPrice').value),image_url:$('productImage').value.trim()||null,description:$('productDescription').value.trim()||null};
+ const q=id?db.from('menu_products').update(payload).eq('id',id).eq('restaurant_id',restaurantId):db.from('menu_products').insert(payload);
+ const {error}=await q;if(error){msg(error.message);return} $('productForm').reset();$('productId').value='';await loadProducts();msg('تم حفظ الصنف.');
+};
+$('clearProduct').onclick=()=>{$('productForm').reset();$('productId').value=''};
+$('categoryForm').onsubmit=async e=>{e.preventDefault();const name=$('categoryName').value.trim();const {error}=await db.from('menu_categories').insert({restaurant_id:restaurantId,name,sort_order:categories.length+1});if(error){msg(error.message);return}$('categoryName').value='';await loadCategories();msg('تمت إضافة القسم.')};
+document.addEventListener('click',async e=>{
+ const edit=e.target.closest('[data-edit]');if(edit){const p=products.find(x=>x.id===edit.dataset.edit);if(!p)return;$('productId').value=p.id;$('productName').value=p.name;$('productCategory').value=p.category_id;$('productPrice').value=p.price_iqd;$('productImage').value=p.image_url||'';$('productDescription').value=p.description||'';document.querySelector('[data-tab="products"]').click()}
+ const del=e.target.closest('[data-delete]');if(del&&confirm('حذف هذا الصنف؟')){const {error}=await db.from('menu_products').delete().eq('id',del.dataset.delete).eq('restaurant_id',restaurantId);if(error)msg(error.message);else{await loadProducts();msg('تم حذف الصنف.')}}
+ const cat=e.target.closest('[data-toggle-cat]');if(cat){const {error}=await db.from('menu_categories').update({is_active:cat.dataset.active!=='true'}).eq('id',cat.dataset.toggleCat).eq('restaurant_id',restaurantId);if(error)msg(error.message);else await loadCategories()}
+});
+document.addEventListener('change',async e=>{if(e.target.matches('[data-order]')){const {error}=await db.from('orders').update({status:e.target.value}).eq('id',e.target.dataset.order).eq('restaurant_id',restaurantId);if(error){msg(error.message);await loadOrders()}else msg('تم تحديث حالة الطلب.')}});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['orders','products','categories'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
+db.auth.getSession().then(({data})=>{if(data.session)boot()});
+</script></body></html>
